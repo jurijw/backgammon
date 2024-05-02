@@ -21,32 +21,71 @@ public class Board {
     }
 
     public void printBoard() {
+        /** Print the board coordinates for the top of the board (1-12). */
         System.out.println();
         for (int i = 1; i <= 12; i++) {
             System.out.print(i);
             if (i < 10) {
                 /* Add a space for padding. */
-                System.out.print(" ");
+                Utils.printPadding(3);
+            } else {
+                Utils.printPadding(2);
             }
         }
         System.out.println();
+
+        /** Print the pieces for the top half of the board (positions 1-12). */
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 12; j++) {
                 byte numPieces = _positions[j];
-                if (Math.abs(numPieces) >= i) {
+                if (Math.abs(numPieces) > i) {
                     if (numPieces > 0) {
-                        System.out.print("x ");
+                        Utils.printWhite();
                     } else if (numPieces < 0) {
-                        System.out.print("o ");
+                        Utils.printBlack();
                     } else {
-                        System.out.print("  ");
+                        Utils.printEmpty();
                     }
+                } else {
+                    Utils.printEmpty();
                 }
             }
             System.out.println();
         }
+
+        /** Print a board divider, through the middle of the baord. */
+        for (int i = 0; i < Utils.BOARDSPACING * 12; i++) {
+            System.out.print("-");
+        }
         System.out.println();
+
+        /** Print the bottom half of the board (positions 13-24). */
+        for (int i = 4; i >= 0; i--) {
+            for (int j = 23; j >= 12; j--) {
+                byte numPieces = _positions[j];
+                if (Math.abs(numPieces) > i) {
+                    if (numPieces > 0) {
+                        Utils.printWhite();
+                    } else if (numPieces < 0) {
+                        Utils.printBlack();
+                    } else {
+                        Utils.printEmpty();
+                    }
+                } else {
+                    Utils.printEmpty();
+                }
+            }
+            System.out.println();
+        }
+
+        /** Print the coordinates for the bottom half of the board (positions 13-24). */
+        for (int i = 24; i > 12; i--) {
+            System.out.print(i);
+            Utils.printPadding(2);
+        }
     }
+
+
 
     /** Stores the number of white or black pieces at a given board location (indexed from 0-23).
      * Positive numbers indicate white pieces occupy the position, and negative indicate black pieces
