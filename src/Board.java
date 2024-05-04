@@ -85,6 +85,48 @@ public class Board {
         }
     }
 
+    public void makeMove(Move move) {
+        /** Applies the given MOVE to the BOARD, granted that the MOVE provided is valid. */
+        byte startIndex = move.get_startIndex();
+        byte endIndex = move.get_endIndex();
+
+        /** TODO: check whether white or black turn. Check there are actually pieces, etc.. */
+        if (_positions[startIndex] == 0) {
+            throw new BackgammonError("Attempted to move a piece from a position with no pieces.");
+        }
+        if (Math.abs(_positions[endIndex]) == 5) {
+            throw new BackgammonError("Attempted to move a piece to a full position.");
+        }
+
+        if ((_positions[startIndex] > 0 && _positions[endIndex] < 0) || (_positions[startIndex] < 0 && _positions[endIndex] > 0)) {
+            /** This kind of move is only valid if it is a capturing move. I.e, the target position only has one piece on it. */
+            if (Math.abs(_positions[endIndex]) != 1) {
+                throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempting to move a piece to an opponent's position with more than one piece on it.");
+            }
+        }
+
+        if (_positions[startIndex] > 0) { /* White's turn. */
+            _positions[startIndex] -= 1;
+            _positions[endIndex] += 1;
+        } else { /* Black's turn. */
+            _positions[startIndex] += 1;
+            _positions[endIndex] -= 1;
+        }
+    }
+
+    public boolean[] getOccupiedPositions(boolean white) {
+        /** Returns a byte array containing the indices of the positions of all positions occupied by white if WHITE is true, else all black occupied positions. */
+        boolean[] occupied = new boolean[_positions.length];
+        for (int i = 0; i < _positions.length; i++) {
+            byte posCount = _positions[i];
+            if ((posCount > 0 && white) || (posCount < 0 && !white))  {
+                occupied[i] = true;
+            }
+            /* TODO: shouldn't require an else statement because array should be initialized to all false. */
+        }
+        return occupied;
+    }
+
 
 
     /** Stores the number of white or black pieces at a given board location (indexed from 0-23).

@@ -1,16 +1,20 @@
 public class Move {
-    /** Class describing a move in the game. */
-    Move(byte startIndex, byte endIndex, byte numPieces) {
+    /** Class describing a move in the game. A TURN will consist of a maximum of TWO moves, provided they are valid moves. */
+    Move(byte startIndex, byte endIndex) {
         this._startIndex = startIndex;
         this._endIndex = endIndex;
-        this._numPieces = numPieces;
+    }
+
+    public byte get_startIndex() {
+        return _startIndex;
+    }
+
+    public byte get_endIndex() {
+        return _endIndex;
     }
 
     /* The starting index of the piece(s) to be moved. */
-    private byte _startIndex;
+    private final byte _startIndex;
     /* The end index of the piece(s) to be moved. */
-    private byte _endIndex;
-    /* The number of pieces to be moved. Allows for two pieces to be moved at once. */
-    private byte _numPieces;
-
+    private final byte _endIndex;
 }
