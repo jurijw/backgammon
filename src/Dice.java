@@ -37,5 +37,8 @@ public class Dice {
         System.out.println(this.getRoll1() + ", " + this.getRoll2());
     }
 
+    public String toString() {
+        return "Roll: (" + getRoll1() + ", " + getRoll2() + ")";
+    }
     private byte[] _roll;
 }

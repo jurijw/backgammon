@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 public class Board {
     Board() {
         _positions = new byte[24];
@@ -23,7 +25,7 @@ public class Board {
     public void printBoard() {
         /** Print the board coordinates for the top of the board (1-12). */
         System.out.println();
-        for (int i = 1; i <= 12; i++) {
+        for (int i = 0; i <= 11; i++) {
             System.out.print(i);
             if (i < 10) {
                 /* Add a space for padding. */
@@ -79,10 +81,11 @@ public class Board {
         }
 
         /** Print the coordinates for the bottom half of the board (positions 13-24). */
-        for (int i = 24; i > 12; i--) {
+        for (int i = 23; i > 11; i--) {
             System.out.print(i);
             Utils.printPadding(2);
         }
+        System.out.println();
     }
 
     public void makeMove(Move move) {
@@ -114,18 +117,24 @@ public class Board {
         }
     }
 
-    public boolean[] getOccupiedPositions(boolean white) {
-        /** Returns a byte array containing the indices of the positions of all positions occupied by white if WHITE is true, else all black occupied positions. */
-        boolean[] occupied = new boolean[_positions.length];
+    public byte numberPiecesAt(byte index) {
+        /** Get the number of pieces at the board position INDEX. Negative numbers indicate black pieces. */
+        return _positions[index];
+    }
+
+    public ArrayList<Byte> getOccupiedPositions(boolean white) {
+        /** Returns a byte array containing the indices of all the positions occupied by white if WHITE is true, else all black occupied positions. */
+        ArrayList<Byte> occupied = new ArrayList<>();
         for (int i = 0; i < _positions.length; i++) {
             byte posCount = _positions[i];
             if ((posCount > 0 && white) || (posCount < 0 && !white))  {
-                occupied[i] = true;
+                occupied.add((byte) i);
             }
-            /* TODO: shouldn't require an else statement because array should be initialized to all false. */
         }
         return occupied;
     }
+
+
 
 
 

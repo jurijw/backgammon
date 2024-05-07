@@ -13,6 +13,10 @@ public class Move {
         return _endIndex;
     }
 
+    public String toString() {
+        return "Move: " + _startIndex + "->" + _endIndex;
+    }
+
     /* The starting index of the piece(s) to be moved. */
     private final byte _startIndex;
     /* The end index of the piece(s) to be moved. */

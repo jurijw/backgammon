@@ -1,3 +1,4 @@
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Game {
@@ -48,14 +49,36 @@ public class Game {
         return this._board.getPositions();
     }
 
-    public ArrayList<Move> getValidMoves() {
-        byte roll1 = this._dice.getRoll1();
-        byte roll2 = this._dice.getRoll2();
-
+    public ArrayList<Move> getValidMovesFromRoll(byte roll) {
+        /** Takes a single roll (1-6) and determines the valid moves based on that roll. */
+        /** TODO: negative rolls for black? */
         ArrayList<Move> validMoves = new ArrayList<>();
+        ArrayList<Byte> currentPlayerOccupied = _board.getOccupiedPositions(_whiteTurn);
+        for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
+            byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
+            /** TODO: once all pieces are in end zone, must consider moves that remove the pieces. */
+            boolean allPiecesInEndZone = false;
+            if (!allPiecesInEndZone && (targetIndex < 0 || targetIndex >= 24)) {
+                continue;
+            }
+            byte numberAtTarget = _board.numberPiecesAt(targetIndex);
+            if (_whiteTurn) {
+                if (numberAtTarget >= -1 && numberAtTarget < 5) {
+                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
+                }
+            } else {
+                if (numberAtTarget <= 1 && numberAtTarget > -5) {
+                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
+                }
+            }
+        }
 
+        return validMoves;
+    }
 
-
+    public ArrayList<Move> getValidMoves() {
+        ArrayList<Move> validMoves = getValidMovesFromRoll(getRoll1());
+        validMoves.addAll(getValidMovesFromRoll(getRoll2()));
         return validMoves;
     }
 
