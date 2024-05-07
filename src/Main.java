@@ -5,11 +5,16 @@ import java.util.ArrayList;
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) throws IOException {
-        Game game = new Game();
-        game.printDice();
-        game.printBoard();
-        System.out.println(game.getValidMoves());
-        game.makeMove(game.getValidMoves().get(0));
-        game.printBoard();
+        initialize();
+        gameLoop();
     }
+
+    private static void initialize() {
+        _game = new Game();
+    }
+    static private void gameLoop() {
+        _game.print();
+    }
+
+    private static Game _game;
 }

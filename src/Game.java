@@ -33,6 +33,15 @@ public class Game {
         this._dice.print();
     }
 
+    public void print() {
+        String side = _whiteTurn ? "WHITE" : "BLACK";
+        System.out.println("TURN: " + side);
+
+        System.out.println(_dice);
+        printBoard();
+        System.out.println(getValidMoves());
+    }
+
     public byte[] getRoll() {
         return this._dice.getRoll();
     }
@@ -52,6 +61,7 @@ public class Game {
     public ArrayList<Move> getValidMovesFromRoll(byte roll) {
         /** Takes a single roll (1-6) and determines the valid moves based on that roll. */
         /** TODO: negative rolls for black? */
+        roll = _whiteTurn ? roll : (byte) -roll; /** This allows black rolls to be counted as negative. */
         ArrayList<Move> validMoves = new ArrayList<>();
         ArrayList<Byte> currentPlayerOccupied = _board.getOccupiedPositions(_whiteTurn);
         for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
