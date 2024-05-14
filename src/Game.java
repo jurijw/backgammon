@@ -1,18 +1,28 @@
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Game {
+    /** The number of positions that the board has. */
+    private final byte BOARD_SIZE = Board.BOARD_SIZE;
+
+    /** The maximum number of pieces allowed in any given position. */
+    private final byte MAX_PIECES_PER_POSITION = Board.MAX_PIECES_PER_POSITION;
+
+    /** The number of positions that the end zones span. */
+    private final byte END_ZONE_SIZE = Board.END_ZONE_SIZE;
+
     Game() {
         _dice = new Dice();
         _board = new Board();
-        _whiteTurn = doesWhiteStart();
+        _whiteTurn = doesWhiteStart(); // TODO: Can set to null initially, then determine once game starts.
     }
 
+
+
+    /** Determine which side starts the game.*/
     private boolean doesWhiteStart() {
-        /** Determine which side starts the game.*/
-        if (_dice.getRoll1() > _dice.getRoll2()) {
+        if (_dice.first() > _dice.second()) {
             return true;
-        } else if (_dice.getRoll1() < _dice.getRoll2()) {
+        } else if (_dice.first() < _dice.second()) {
             return false;
         } else {
             /* If the dice are equal, re-roll until distinct. */
@@ -22,15 +32,15 @@ public class Game {
     }
 
     public void makeMove(Move move) {
-        this._board.makeMove(move);
+        _board.makeMove(move);
     }
 
     public void printBoard() {
-        this._board.printBoard();
+        _board.printBoard();
     }
 
     public void printDice() {
-        this._dice.print();
+        _dice.print();
     }
 
     public void print() {
@@ -42,25 +52,21 @@ public class Game {
         System.out.println(getValidMoves());
     }
 
-    public byte[] getRoll() {
-        return this._dice.getRoll();
-    }
-
     public byte getRoll1() {
-        return this._dice.getRoll1();
+        return _dice.first();
     }
 
     public byte getRoll2() {
-        return this._dice.getRoll2();
+        return _dice.second();
     }
 
     public byte[] getPositions() {
-        return this._board.getPositions();
+        return _board.getPositions();
     }
 
+    /** Takes a single roll (1-6) and determines the valid moves based on that roll. */
+    /** TODO: negative rolls for black? */
     public ArrayList<Move> getValidMovesFromRoll(byte roll) {
-        /** Takes a single roll (1-6) and determines the valid moves based on that roll. */
-        /** TODO: negative rolls for black? */
         roll = _whiteTurn ? roll : (byte) -roll; /** This allows black rolls to be counted as negative. */
         ArrayList<Move> validMoves = new ArrayList<>();
         ArrayList<Byte> currentPlayerOccupied = _board.getOccupiedPositions(_whiteTurn);
@@ -68,16 +74,16 @@ public class Game {
             byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
             /** TODO: once all pieces are in end zone, must consider moves that remove the pieces. */
             boolean allPiecesInEndZone = false;
-            if (!allPiecesInEndZone && (targetIndex < 0 || targetIndex >= 24)) {
+            if (!allPiecesInEndZone && (targetIndex < 0 || targetIndex >= BOARD_SIZE)) {
                 continue;
             }
             byte numberAtTarget = _board.numberPiecesAt(targetIndex);
             if (_whiteTurn) {
-                if (numberAtTarget >= -1 && numberAtTarget < 5) {
+                if (numberAtTarget >= -1 && numberAtTarget < MAX_PIECES_PER_POSITION) {
                     validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
                 }
             } else {
-                if (numberAtTarget <= 1 && numberAtTarget > -5) {
+                if (numberAtTarget <= 1 && numberAtTarget > -MAX_PIECES_PER_POSITION) {
                     validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
                 }
             }
@@ -86,6 +92,7 @@ public class Game {
         return validMoves;
     }
 
+    /** Return an array of all valid moves which can be made by using either roll first. */
     public ArrayList<Move> getValidMoves() {
         ArrayList<Move> validMoves = getValidMovesFromRoll(getRoll1());
         validMoves.addAll(getValidMovesFromRoll(getRoll2()));

@@ -1,6 +1,7 @@
 public class Move {
     /** Class describing a move in the game. A TURN will consist of a maximum of TWO moves, provided they are valid moves. */
     Move(byte startIndex, byte endIndex) {
+        // FIXME: Use a factory method to save memory.
         this._startIndex = startIndex;
         this._endIndex = endIndex;
     }

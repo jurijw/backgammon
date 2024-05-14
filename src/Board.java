@@ -1,14 +1,30 @@
 import java.util.ArrayList;
 
 public class Board {
+
+    /** The number of positions that the board has. */
+    public static final byte BOARD_SIZE = 24;
+
+    /** The maximum number of pieces allowed in any given position. */
+    public static final byte MAX_PIECES_PER_POSITION = 5;
+
+    /** The number of positions that the end zones span. */
+    public static final byte END_ZONE_SIZE = 6;
+
+
     Board() {
-        _positions = new byte[24];
-        _positions[0] = 2;
-        _positions[11] = _positions[18] = 5;
-        _positions[16] = 3;
-        _positions[23 - 0] = -2;
-        _positions[23 - 11] = _positions[23 - 18] = -5;
-        _positions[23 - 16] = -3;
+        _positions = new byte[BOARD_SIZE];
+        setupDefault(_positions);
+    }
+
+    /** Configure board to the default (standard) initial state. */
+    private void setupDefault(byte[] positions) {
+        positions[0] = 2;
+        positions[11] = positions[18] = 5;
+        positions[16] = 3;
+        positions[23 - 0] = -2;
+        positions[23 - 11] = positions[23 - 18] = -5;
+        positions[23 - 16] = -3;
     }
 
     /** Return the number of pieces (negative indicating black) at a given board position. */
@@ -16,6 +32,8 @@ public class Board {
         return _positions[index];
     }
 
+    /** Returns a copy of the position array of the board.
+     * TODO: Consider not copying but add to the doc-comment that the result should not be modified by the caller. Copying the position array could be slow and memory intensive. */
     byte[] getPositions() {
         byte[] copiedPositionArray = new byte[_positions.length];
         System.arraycopy(_positions, 0, copiedPositionArray, 0, _positions.length);
@@ -23,7 +41,7 @@ public class Board {
     }
 
     public void printBoard() {
-        /** Print the board coordinates for the top of the board (1-12). */
+        // Print the board coordinates for the top of the board (1-12). */
         System.out.println();
         for (int i = 0; i <= 11; i++) {
             System.out.print(i);
@@ -63,7 +81,7 @@ public class Board {
 
         /** Print the bottom half of the board (positions 13-24). */
         for (int i = 4; i >= 0; i--) {
-            for (int j = 23; j >= 12; j--) {
+            for (int j = BOARD_SIZE - 1; j >= BOARD_SIZE / 2; j--) {
                 byte numPieces = _positions[j];
                 if (Math.abs(numPieces) > i) {
                     if (numPieces > 0) {
@@ -81,28 +99,28 @@ public class Board {
         }
 
         /** Print the coordinates for the bottom half of the board (positions 13-24). */
-        for (int i = 23; i > 11; i--) {
+        for (int i = BOARD_SIZE - 1; i >= BOARD_SIZE / 2; i--) {
             System.out.print(i);
             Utils.printPadding(2);
         }
         System.out.println();
     }
 
+    /** Applies the given MOVE to the BOARD, provided that the MOVE is valid. */
     public void makeMove(Move move) {
-        /** Applies the given MOVE to the BOARD, granted that the MOVE provided is valid. */
         byte startIndex = move.get_startIndex();
         byte endIndex = move.get_endIndex();
 
-        /** TODO: check whether white or black turn. Check there are actually pieces, etc.. */
+        // TODO: check whether white or black turn. Check there are actually pieces, etc.. */
         if (_positions[startIndex] == 0) {
             throw new BackgammonError("Attempted to move a piece from a position with no pieces.");
         }
-        if (Math.abs(_positions[endIndex]) == 5) {
+        if (Math.abs(_positions[endIndex]) == MAX_PIECES_PER_POSITION) {
             throw new BackgammonError("Attempted to move a piece to a full position.");
         }
 
         if ((_positions[startIndex] > 0 && _positions[endIndex] < 0) || (_positions[startIndex] < 0 && _positions[endIndex] > 0)) {
-            /** This kind of move is only valid if it is a capturing move. I.e, the target position only has one piece on it. */
+            // This kind of move is only valid if it is a capturing move. I.e, the target position only has one piece on it. */
             if (Math.abs(_positions[endIndex]) != 1) {
                 throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempting to move a piece to an opponent's position with more than one piece on it.");
             }
@@ -117,13 +135,13 @@ public class Board {
         }
     }
 
+    /** Get the number of pieces at the board position INDEX. Negative numbers indicate black pieces. */
     public byte numberPiecesAt(byte index) {
-        /** Get the number of pieces at the board position INDEX. Negative numbers indicate black pieces. */
         return _positions[index];
     }
 
+    /** Returns a byte array containing the indices of all the positions occupied by white if WHITE is true, else all black occupied positions. */
     public ArrayList<Byte> getOccupiedPositions(boolean white) {
-        /** Returns a byte array containing the indices of all the positions occupied by white if WHITE is true, else all black occupied positions. */
         ArrayList<Byte> occupied = new ArrayList<>();
         for (int i = 0; i < _positions.length; i++) {
             byte posCount = _positions[i];
@@ -132,6 +150,41 @@ public class Board {
             }
         }
         return occupied;
+    }
+
+    /** Return true if WHITE and all of white's pieces are in the end zone. Analogous behavior if WHITE is false (checks if all black pieces are in the end zone) */
+    public boolean allPiecesInEndZone(boolean white) {
+        if (white) {
+            for (int i = END_ZONE_SIZE; i < BOARD_SIZE; i++) {
+                if (_positions[i] > 0) {
+                    return false;
+                }
+            }
+        } else {
+            for (int i = BOARD_SIZE - 1; i >= END_ZONE_SIZE; i--) {
+                if (_positions[i] < 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /** Return the number of white pieces remaining on the board if WHITE, else number of black pieces. */
+    public byte numPieces(boolean white) {
+        byte count = 0;
+        for (byte position : _positions) {
+            if (white) {
+                if (position > 0) {
+                    count += position;
+                }
+            } else {
+                if (position < 0) {
+                    count -= position;
+                }
+            }
+        }
+        return count;
     }
 
 
@@ -143,5 +196,7 @@ public class Board {
      * occupy the position. The maximum allowed number of pieces in any position is 5.
      */
     private final byte[] _positions;
+
+    // TODO: consider making the board keep track of whose turn it is.
 
 }
