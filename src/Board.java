@@ -108,8 +108,8 @@ public class Board {
 
     /** Applies the given MOVE to the BOARD, provided that the MOVE is valid. */
     public void makeMove(Move move) {
-        byte startIndex = move.get_startIndex();
-        byte endIndex = move.get_endIndex();
+        byte startIndex = move.start();
+        byte endIndex = move.target();
 
         // TODO: check whether white or black turn. Check there are actually pieces, etc.. */
         if (_positions[startIndex] == 0) {

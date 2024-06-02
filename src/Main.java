@@ -13,6 +13,7 @@ public class Main {
         _game = new Game();
     }
     static private void gameLoop() {
+        _game.turn();
         _game.print();
     }
 

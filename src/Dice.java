@@ -31,14 +31,11 @@ public class Dice {
         _second = generateRoll();
     }
 
-    /** Randomly generate an integer in the range (LOW, HIGH) sampling uniformly. */
-    static int randomIntBetween(int low, int high) {
-        return (int) Math.floor(Math.random() * (high - low + 1)) + low;
-    }
+
 
     /** Generate a random dice roll. Assumes a NUM_SIDES sided dice, where every integer between 1 and NUM_SIDES has equal (uniform) probability of occurring. */
     static byte generateRoll() {
-        return (byte) randomIntBetween(1, NUM_SIDES);
+        return (byte) Utils.randomIntegerInclusive(1, NUM_SIDES);
     }
 
     /** Return true iff the dice roll is a Pasch, that is the values of both rolls are equal. */

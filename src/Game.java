@@ -16,7 +16,23 @@ public class Game {
         _whiteTurn = doesWhiteStart(); // TODO: Can set to null initially, then determine once game starts.
     }
 
+    public void turn() {
+        _dice.roll();
+        byte numRollsRemaining = (byte) (_dice.pasch() ? 4 : 2);
 
+        ArrayList<Move> legalMoves = getValidMoves(); // TODO: consider storing this array to avoid recomputing.
+        while (numRollsRemaining > 0 && !legalMoves.isEmpty()) {
+            print();
+            // FIXME: this is just temporary - makes a random move
+            Move move = Utils.selectRandomFromArray(legalMoves);
+            System.out.println(move);
+            makeMove(move);
+
+            // FIXME: compute legal moves only with dice that haven't been used yet in this turn.
+
+            numRollsRemaining -= 1;
+        }
+    }
 
     /** Determine which side starts the game.*/
     private boolean doesWhiteStart() {
@@ -31,16 +47,17 @@ public class Game {
         }
     }
 
+    /** Switches the active players turn. */
+    public void switchTurn() {
+        _whiteTurn = !_whiteTurn;
+    }
+
     public void makeMove(Move move) {
         _board.makeMove(move);
     }
 
     public void printBoard() {
         _board.printBoard();
-    }
-
-    public void printDice() {
-        _dice.print();
     }
 
     public void print() {
@@ -52,17 +69,16 @@ public class Game {
         System.out.println(getValidMoves());
     }
 
-    public byte getRoll1() {
+    /** Get the first roll of my dice. */
+    public byte first() {
         return _dice.first();
     }
 
-    public byte getRoll2() {
+    /** Get the second roll of my dice. */
+    public byte second() {
         return _dice.second();
     }
 
-    public byte[] getPositions() {
-        return _board.getPositions();
-    }
 
     /** Takes a single roll (1-6) and determines the valid moves based on that roll. */
     /** TODO: negative rolls for black? */
@@ -94,8 +110,8 @@ public class Game {
 
     /** Return an array of all valid moves which can be made by using either roll first. */
     public ArrayList<Move> getValidMoves() {
-        ArrayList<Move> validMoves = getValidMovesFromRoll(getRoll1());
-        validMoves.addAll(getValidMovesFromRoll(getRoll2()));
+        ArrayList<Move> validMoves = getValidMovesFromRoll(first());
+        validMoves.addAll(getValidMovesFromRoll(second()));
         return validMoves;
     }
 
