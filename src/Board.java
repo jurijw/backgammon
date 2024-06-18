@@ -6,6 +6,10 @@ public class Board {
      * length 24 + 2, where the two additional entries represent how many pieces have "escaped" the board */
     public static final byte BOARD_SIZE = 24;
 
+    /** The first index of a piece on the board. That is, has not escaped. */
+    public static final byte BOARD_START_INDEX = 1;
+    /** The final index of a piece on the board. That is, has not escaped. */
+    public static final byte BOARD_END_INDEX = 24;
     /** The maximum number of pieces allowed in any given position. */
     public static final byte MAX_PIECES_PER_POSITION = 5;
 
@@ -25,13 +29,7 @@ public class Board {
     public static final byte[] DEFAULT_BOARD_SETUP = { 0, 2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5,
                                                          -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 0 };
     Board() {
-        _positions = new byte[BOARD_SIZE];
-        setupDefault(_positions);
-    }
-
-    /** Configure board to the default (standard) initial state. */
-    private void setupDefault(byte[] positions) {
-        positions = DEFAULT_BOARD_SETUP; // TODO: may have to copy the board to not modify the class variable (although it is set to final...)
+        _positions = DEFAULT_BOARD_SETUP; // TODO: may have to copy the board to not modify the class variable (although it is set to final...)
     }
 
     /** Return the number of pieces (negative indicating black) at a given board position. */
@@ -148,7 +146,7 @@ public class Board {
     }
 
     /** Returns a byte array containing the indices of all the positions occupied by white if WHITE is true, else all black occupied positions. */
-    public ArrayList<Byte> getOccupiedPositions(boolean white) {
+    public ArrayList<Byte> occupiedPositions(boolean white) {
         ArrayList<Byte> occupied = new ArrayList<>();
         for (int i = 0; i < _positions.length; i++) {
             byte posCount = _positions[i];
@@ -159,22 +157,27 @@ public class Board {
         return occupied;
     }
 
-    /** Return true if WHITE and all of white's pieces are in the end zone. Analogous behavior if WHITE is false (checks if all black pieces are in the end zone) */
+    /** Return an array of all occupied positions of the active player. */
+    public ArrayList<Byte> occupiedPositions() {
+        return occupiedPositions(_white);
+    }
+
+    /** Returns true iff all of a player's pieces are in the end zone (final 6 positions), or have already "escaped" the
+     * board. The player that is checked for is given by the WHITE boolean.
+     */
     public boolean allPiecesInEndZone(boolean white) {
-        if (white) {
-            for (int i = END_ZONE_SIZE; i < BOARD_SIZE; i++) {
-                if (_positions[i] > 0) {
-                    return false;
-                }
-            }
-        } else {
-            for (int i = BOARD_SIZE - 1; i >= END_ZONE_SIZE; i--) {
-                if (_positions[i] < 0) {
-                    return false;
-                }
+        ArrayList<Byte> occupiedPositions = occupiedPositions(white);
+        for (byte position : occupiedPositions) {
+            if ((white && position <= Board.END_ZONE_START_INDEX_WHITE) || (!white && position >= Board.END_ZONE_END_INDEX_BLACK)) {
+                return false;
             }
         }
         return true;
+    }
+
+    /** Returns true iff all the active player's pieces (on the board) are in the end zone. */
+    public boolean allPiecesInEndzone() {
+        return allPiecesInEndZone(_white);
     }
 
     /** Return the number of white pieces remaining on the board if WHITE, else number of black pieces. */
@@ -194,16 +197,35 @@ public class Board {
         return count;
     }
 
+    /** Returns true iff it is white's turn to play. */
+    public boolean white() {
+        return _white;
+    }
+
+    /** Set the active player to WHITE, where if WHITE is true, then it is the white player's turn,
+     * otherwise it is black's turn.
+     */
+    public void setTurn(boolean white) {
+        _white = white;
+    }
+
+    /** Switch the active player on my board. */
+    public void switchTurn() {
+        this._white = !this._white;
+    }
 
 
 
 
-    /** Stores the number of white or black pieces at a given board location (indexed from 0-23).
+    /** Stores the number of white or black pieces at a given board location (indexed from 1-24).
      * Positive numbers indicate white pieces occupy the position, and negative indicate black pieces
-     * occupy the position. The maximum allowed number of pieces in any position is 5.
+     * occupy the position. Index 0 and 25 store the number of pieces that have managed to "escape" the board on either
+     * side. The maximum allowed number of pieces in any position (except for indices 0 and 25) is 5.
      */
     private final byte[] _positions;
 
+    /** True iff it is white's turn to play on this board. */
+    private boolean _white;
     // TODO: consider making the board keep track of whose turn it is.
 
 }
