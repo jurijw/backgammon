@@ -11,16 +11,15 @@ public class Game {
     private final byte END_ZONE_SIZE = Board.END_ZONE_SIZE;
 
     Game() {
-        _dice = new Dice();
         _board = new Board();
         _board.setTurn(doesWhiteStart());
     }
 
     public void turn() {
-        _dice.roll();
-        byte numRollsRemaining = (byte) (_dice.pasch() ? 4 : 2);
+        _board.roll();
+        byte numRollsRemaining = (byte) (_board.pasch() ? 4 : 2);
 
-        ArrayList<Move> legalMoves = getValidMoves(); // TODO: consider storing this array to avoid recomputing.
+        ArrayList<Move> legalMoves = _board.legalMoves(); // TODO: consider storing this array to avoid recomputing.
         while (numRollsRemaining > 0 && !legalMoves.isEmpty()) {
             print();
             // FIXME: this is just temporary - makes a random move
@@ -36,13 +35,13 @@ public class Game {
 
     /** Determine which side starts the game.*/
     private boolean doesWhiteStart() {
-        if (_dice.first() > _dice.second()) {
+        if (_board.first() > _board.second()) {
             return true;
-        } else if (_dice.first() < _dice.second()) {
+        } else if (_board.first() < _board.second()) {
             return false;
         } else {
             /* If the dice are equal, re-roll until distinct. */
-            _dice.roll();
+            _board.roll();
             return doesWhiteStart();
         }
     }
@@ -59,55 +58,11 @@ public class Game {
         String side = _board.white() ? "WHITE" : "BLACK";
         System.out.println("TURN: " + side);
 
-        System.out.println(_dice);
+        System.out.println(_board.getDice());
         printBoard();
-        System.out.println(getValidMoves());
+        System.out.println(_board.legalMoves());
     }
 
-    /** Get the first roll of my dice. */
-    public byte first() {
-        return _dice.first();
-    }
-
-    /** Get the second roll of my dice. */
-    public byte second() {
-        return _dice.second();
-    }
-
-
-    /** Takes a single roll (1-6) and determines the valid moves based on that roll. */
-    public ArrayList<Move> getValidMovesFromRoll(byte roll) {
-        roll = _board.white() ? roll : (byte) -roll; // This allows black rolls to be counted as negative.
-        ArrayList<Move> validMoves = new ArrayList<>();
-        ArrayList<Byte> currentPlayerOccupied = _board.occupiedPositions();
-        for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
-            byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
-            /** TODO: once all pieces are in end zone, must consider moves that remove the pieces. */
-            if (!_board.allPiecesInEndzone() && (targetIndex < Board.BOARD_START_INDEX || targetIndex >= Board.BOARD_END_INDEX)) {
-                continue;
-            }
-            byte numberAtTarget = _board.numberPiecesAt(targetIndex);
-            if (_board.white()) {
-                if (numberAtTarget >= -1 && numberAtTarget < MAX_PIECES_PER_POSITION) {
-                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
-                }
-            } else {
-                if (numberAtTarget <= 1 && numberAtTarget > -MAX_PIECES_PER_POSITION) {
-                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
-                }
-            }
-        }
-
-        return validMoves;
-    }
-
-    /** Return an array of all valid moves which can be made by using either roll first. */
-    public ArrayList<Move> getValidMoves() {
-        ArrayList<Move> validMoves = getValidMovesFromRoll(first());
-        validMoves.addAll(getValidMovesFromRoll(second()));
-        return validMoves;
-    }
 
     private final Board _board;
-    private final Dice _dice;
 }

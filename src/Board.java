@@ -30,6 +30,7 @@ public class Board {
                                                          -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 0 };
     Board() {
         _positions = DEFAULT_BOARD_SETUP; // TODO: may have to copy the board to not modify the class variable (although it is set to final...)
+        _dice = new Dice();
     }
 
     /** Return the number of pieces (negative indicating black) at a given board position. */
@@ -214,8 +215,61 @@ public class Board {
         this._white = !this._white;
     }
 
+    /** Roll my dice. */
+    public void roll() {
+        _dice.roll();
+    }
 
+    /** Check if the score of my dice is a Pasch. That is, equal outcomes on both dice. */
+    public boolean pasch() {
+        return _dice.pasch();
+    }
 
+    /** Return the score of my first die. */
+    public byte first() {
+        return _dice.first();
+    }
+
+    /** Return the score of my second die. */
+    public byte second() {
+        return _dice.second();
+    }
+
+    public Dice getDice() {
+        return _dice;
+    }
+
+    /** Takes a single roll (1-6) and determines legal moves based on that roll. */
+    public ArrayList<Move> legalMovesFromRoll(byte roll) {
+        roll = white() ? roll : (byte) -roll; // This allows black rolls to be counted as negative.
+        ArrayList<Move> validMoves = new ArrayList<>();
+        ArrayList<Byte> currentPlayerOccupied = occupiedPositions();
+        for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
+            byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
+            /** TODO: once all pieces are in end zone, must consider moves that remove the pieces. */
+            if (!allPiecesInEndzone() && (targetIndex < Board.BOARD_START_INDEX || targetIndex >= Board.BOARD_END_INDEX)) {
+                continue;
+            }
+            byte numberAtTarget = numberPiecesAt(targetIndex);
+            if (white()) {
+                if (numberAtTarget >= -1 && numberAtTarget < MAX_PIECES_PER_POSITION) {
+                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
+                }
+            } else {
+                if (numberAtTarget <= 1 && numberAtTarget > -MAX_PIECES_PER_POSITION) {
+                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
+                }
+            }
+        }
+
+        return validMoves;
+    }
+    /** Return an array of all legal moves which can be made by using either roll first. */
+    public ArrayList<Move> legalMoves() {
+        ArrayList<Move> moves = legalMovesFromRoll(first());
+        moves.addAll(legalMovesFromRoll(second()));
+        return moves;
+    }
 
     /** Stores the number of white or black pieces at a given board location (indexed from 1-24).
      * Positive numbers indicate white pieces occupy the position, and negative indicate black pieces
@@ -228,4 +282,6 @@ public class Board {
     private boolean _white;
     // TODO: consider making the board keep track of whose turn it is.
 
+    /** A pair of dice associated with this board. */
+    private final Dice _dice;
 }
