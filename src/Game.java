@@ -13,7 +13,7 @@ public class Game {
     Game() {
         _dice = new Dice();
         _board = new Board();
-        _whiteTurn = doesWhiteStart(); // TODO: Can set to null initially, then determine once game starts.
+        _board.setTurn(doesWhiteStart());
     }
 
     public void turn() {
@@ -47,11 +47,6 @@ public class Game {
         }
     }
 
-    /** Switches the active players turn. */
-    public void switchTurn() {
-        _whiteTurn = !_whiteTurn;
-    }
-
     public void makeMove(Move move) {
         _board.makeMove(move);
     }
@@ -61,7 +56,7 @@ public class Game {
     }
 
     public void print() {
-        String side = _whiteTurn ? "WHITE" : "BLACK";
+        String side = _board.white() ? "WHITE" : "BLACK";
         System.out.println("TURN: " + side);
 
         System.out.println(_dice);
@@ -81,19 +76,18 @@ public class Game {
 
 
     /** Takes a single roll (1-6) and determines the valid moves based on that roll. */
-    /** TODO: negative rolls for black? */
     public ArrayList<Move> getValidMovesFromRoll(byte roll) {
-        roll = _whiteTurn ? roll : (byte) -roll; /** This allows black rolls to be counted as negative. */
+        roll = _board.white() ? roll : (byte) -roll; // This allows black rolls to be counted as negative.
         ArrayList<Move> validMoves = new ArrayList<>();
-        ArrayList<Byte> currentPlayerOccupied = _board.getOccupiedPositions(_whiteTurn);
+        ArrayList<Byte> currentPlayerOccupied = _board.occupiedPositions();
         for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
             byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
             /** TODO: once all pieces are in end zone, must consider moves that remove the pieces. */
-            if (!allPiecesInEndZone(_whiteTurn) && (targetIndex < 0 || targetIndex >= BOARD_SIZE)) {
+            if (!_board.allPiecesInEndzone() && (targetIndex < Board.BOARD_START_INDEX || targetIndex >= Board.BOARD_END_INDEX)) {
                 continue;
             }
             byte numberAtTarget = _board.numberPiecesAt(targetIndex);
-            if (_whiteTurn) {
+            if (_board.white()) {
                 if (numberAtTarget >= -1 && numberAtTarget < MAX_PIECES_PER_POSITION) {
                     validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
                 }
@@ -114,21 +108,6 @@ public class Game {
         return validMoves;
     }
 
-    /** Returns true iff all of a player's pieces are in the end zone (final 6 positions).
-     *  The player that is checked for is given by the WHITETURN boolean.
-     */
-    public boolean allPiecesInEndZone(boolean whiteTurn) {
-        ArrayList<Byte> occupiedPositions = _board.getOccupiedPositions(whiteTurn);
-            for (byte index : occupiedPositions) {
-                if ((whiteTurn && index <= Board.END_ZONE_START_INDEX_WHITE) || (!whiteTurn && index >= Board.END_ZONE_END_INDEX_BLACK)) {
-                    return false;
-                }
-            }
-            return true;
-    }
-
-
     private final Board _board;
     private final Dice _dice;
-    private boolean _whiteTurn;
 }
