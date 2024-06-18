@@ -2,7 +2,8 @@ import java.util.ArrayList;
 
 public class Board {
 
-    /** The number of positions that the board has. */
+    /** The number of positions that the board has. Note that positions will be stored in an array of
+     * length 24 + 2, where the two additional entries represent how many pieces have "escaped" the board */
     public static final byte BOARD_SIZE = 24;
 
     /** The maximum number of pieces allowed in any given position. */
@@ -10,8 +11,19 @@ public class Board {
 
     /** The number of positions that the end zones span. */
     public static final byte END_ZONE_SIZE = 6;
+    /** The start index for the black end zone. */
+    public static final byte END_ZONE_START_INDEX_BLACK = 1;
+    /** The end index for the black end zone. */
+    public static final byte END_ZONE_END_INDEX_BLACK = 6;
+    /** The start index for the white end zone. */
+    public static final byte END_ZONE_START_INDEX_WHITE = 18;
+    /** The start index for the black end zone. */
+    public static final byte END_ZONE_END_INDEX_WHITE = 24;
 
-
+    /** The default board setup structure. The leading and trailing zeros here track the number of
+     * pieces that have "escaped" the board on either side, respectively. */
+    public static final byte[] DEFAULT_BOARD_SETUP = { 0, 2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5,
+                                                         -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 0 };
     Board() {
         _positions = new byte[BOARD_SIZE];
         setupDefault(_positions);
@@ -19,16 +31,11 @@ public class Board {
 
     /** Configure board to the default (standard) initial state. */
     private void setupDefault(byte[] positions) {
-        positions[0] = 2;
-        positions[11] = positions[18] = 5;
-        positions[16] = 3;
-        positions[23 - 0] = -2;
-        positions[23 - 11] = positions[23 - 18] = -5;
-        positions[23 - 16] = -3;
+        positions = DEFAULT_BOARD_SETUP; // TODO: may have to copy the board to not modify the class variable (although it is set to final...)
     }
 
     /** Return the number of pieces (negative indicating black) at a given board position. */
-    int getPieces(int index) {
+    byte numPieces(byte index) {
         return _positions[index];
     }
 
@@ -113,10 +120,10 @@ public class Board {
 
         // TODO: check whether white or black turn. Check there are actually pieces, etc.. */
         if (_positions[startIndex] == 0) {
-            throw new BackgammonError("Attempted to move a piece from a position with no pieces.");
+            throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempted to move a piece from a position with no pieces.");
         }
         if (Math.abs(_positions[endIndex]) == MAX_PIECES_PER_POSITION) {
-            throw new BackgammonError("Attempted to move a piece to a full position.");
+            throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempted to move a piece to a full position.");
         }
 
         if ((_positions[startIndex] > 0 && _positions[endIndex] < 0) || (_positions[startIndex] < 0 && _positions[endIndex] > 0)) {
@@ -171,7 +178,7 @@ public class Board {
     }
 
     /** Return the number of white pieces remaining on the board if WHITE, else number of black pieces. */
-    public byte numPieces(boolean white) {
+    public byte numPiecesRemaining(boolean white) {
         byte count = 0;
         for (byte position : _positions) {
             if (white) {
