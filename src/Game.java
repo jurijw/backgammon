@@ -89,8 +89,7 @@ public class Game {
         for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
             byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
             /** TODO: once all pieces are in end zone, must consider moves that remove the pieces. */
-            boolean allPiecesInEndZone = false;
-            if (!allPiecesInEndZone && (targetIndex < 0 || targetIndex >= BOARD_SIZE)) {
+            if (!allPiecesInEndZone(_whiteTurn) && (targetIndex < 0 || targetIndex >= BOARD_SIZE)) {
                 continue;
             }
             byte numberAtTarget = _board.numberPiecesAt(targetIndex);
@@ -113,6 +112,19 @@ public class Game {
         ArrayList<Move> validMoves = getValidMovesFromRoll(first());
         validMoves.addAll(getValidMovesFromRoll(second()));
         return validMoves;
+    }
+
+    /** Returns true iff all of a player's pieces are in the end zone (final 6 positions).
+     *  The player that is checked for is given by the WHITETURN boolean.
+     */
+    public boolean allPiecesInEndZone(boolean whiteTurn) {
+        ArrayList<Byte> occupiedPositions = _board.getOccupiedPositions(whiteTurn);
+            for (byte index : occupiedPositions) {
+                if ((whiteTurn && index <= Board.END_ZONE_START_INDEX_WHITE) || (!whiteTurn && index >= Board.END_ZONE_END_INDEX_BLACK)) {
+                    return false;
+                }
+            }
+            return true;
     }
 
 
