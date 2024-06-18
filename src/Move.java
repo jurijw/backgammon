@@ -16,6 +16,7 @@ public class Move {
         return _targetIndex;
     }
 
+    /** Returns a readable string representing the move. */
     public String toString() {
         return "Move: " + _startIndex + "->" + _targetIndex;
     }
