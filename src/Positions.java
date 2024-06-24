@@ -75,6 +75,11 @@ public class Positions {
         return _positions[index] == 0;
     }
 
+    /** Returns true iff the position at INDEX is occupied, given that index is valid. */
+    public boolean occupied(byte index) {
+        return !empty(index);
+    }
+
     /** Returns true iff the position at INDEX is fully occupied. The index must refer to a position ON THE BOARD. That
      * is, not to a part of the _positions array that stores escaped or captured pieces. (Indices 1-24)
      */
@@ -87,12 +92,13 @@ public class Positions {
         return (0 <= index) && (index <= _positions.length);
     }
 
-    /** Returns true iff INDEX is a valid board index, meaning refering to a position ON THE BOARD. That is,
-     * not referring to an index in the _positions array that stores captured or escaped pieces.
+    /** Returns true iff INDEX is a valid board index, meaning the index refers to a position ON THE BOARD. That is,
+     * not to an index in the _positions array that stores captured or escaped pieces.
      */
     boolean validBoardIndex(byte index) {
         return index < BOARD_START_INDEX || index > BOARD_END_INDEX;
     }
+
     /**
      * Returns a byte array containing the indices of all the positions occupied by white if WHITE is true, else all black occupied positions.
      */
@@ -150,6 +156,53 @@ public class Positions {
         throw BackgammonError.notImplemented();
     }
 
+    /** Returns true iff the pieces at INDEX1 and INDEX2 are of opposite color. */
+    boolean oppositeColorsAtIndices(byte index1, byte index2) {
+        return (get(index1) ^ get(index2)) < 0;
+    }
+
+    /** Returns true iff there is exactly one piece at INDEX. */
+    boolean single(byte index) {
+        return Math.abs(get(index)) == 1;
+    }
+
+    /** Returns true iff white occupies the given INDEX. */
+    boolean whiteAt(byte index) {
+        return get(index) > 0;
+    }
+
+    /** Increments the number of pieces at a given INDEX, maintaining the color of the pieces at that index. For
+     * example, if _positions[4] = -3 (three black pieces at position 4), then increment(4) results in _positions[4]
+     * -> -4. Can only be called on non-empty positions.
+     */
+    void increment(byte index) {
+        ensureOccupied(index, "This method cannot be applied to an empty position.");
+        int delta = (get(index) >> (Byte.SIZE - 1) | 1);
+        byte newNumPieces = (byte) (get(index) + delta);
+        set(index, newNumPieces);
+    }
+    /** Decrements the number of pieces at a given INDEX, maintaining the color of the pieces at that index. For
+     * example, if _positions[4] = -3 (three black pieces at position 4), then decrement(4) results in _positions[4]
+     * -> -2. Can only be called on non-empty positions.
+     */
+    void decrement(byte index) {
+        ensureOccupied(index, "This method cannot be applied to an empty position.");
+        int delta = (get(index) >> (Byte.SIZE - 1) | 1);
+        byte newNumPieces = (byte) (get(index) - delta);
+        set(index, newNumPieces);
+    }
+
+    /** Throw an error if the position at INDEX is occupied. Additional error information can be specified by MESSAGE
+     * . */
+    void ensureEmpty(byte index, String message) {
+        if (occupied(index)) { throw new BackgammonError("POSITION OCCUPIED:" + message); }
+    }
+
+    /** Throw an error if the position at INDEX is empty. Additional error information can be specified by MESSAGE. */
+    void ensureOccupied(byte index, String message) {
+        if (empty(index)) { throw new BackgammonError("POSITION EMPTY:" + message); }
+    }
+
     /**
      * Stores the number of white or black pieces at a given board location (indexed from 1-24).
      * Positive numbers indicate white pieces occupy the position, and negative indicate black pieces
@@ -157,4 +210,15 @@ public class Positions {
      * side. The maximum allowed number of pieces in any position (except for indices 0 and 25) is 5.
      */
     final byte[] _positions;
+
+    /** Returns true iff the position at INDEX is occupied by white pieces if WHITE, else occupied by black pieces. */
+    public boolean occupiedBy(boolean white, byte index) {
+        if (empty(index)) { return false; }
+        return ((get(index) > 0) && white || (get(index) < 0) && !white);
+    }
+
+    /** Returns true iff all the pieces of the player designated by WHITE have managed to escape the board. */
+    boolean allEscaped(boolean white) {
+        throw BackgammonError.notImplemented();
+    }
 }

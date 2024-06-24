@@ -40,7 +40,7 @@ public class Board {
             System.out.println();
         }
 
-        /* Print a board divider, through the middle of the baord. */
+        /* Print a board divider, through the middle of the board. */
         for (int i = 0; i < Utils.BOARDSPACING * 12; i++) {
             System.out.print("-");
         }
@@ -76,29 +76,29 @@ public class Board {
     /** Applies the given MOVE to the BOARD, provided that the MOVE is valid. */
     public void makeMove(Move move) {
         byte startIndex = move.start();
-        byte endIndex = move.target();
+        byte targetIndex = move.target();
 
-        if (getNumberPiecesAt(startIndex) == 0) {
+        if (!occupiedByActivePlayer(startIndex)) {
+            throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempted to move a piece that does not belong to the" +
+                    " active player.");
+        }
+        if (_positions.empty(startIndex)) {
             throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempted to move a piece from a position with no pieces.");
         }
-        if (Math.abs(positions._positions[endIndex]) == Positions.MAX_PIECES_PER_POSITION) {
+        if (_positions.full(targetIndex)) {
             throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempted to move a piece to a full position.");
         }
 
-        if ((positions._positions[startIndex] > 0 && positions._positions[endIndex] < 0) || (positions._positions[startIndex] < 0 && positions._positions[endIndex] > 0)) {
+        if (_positions.oppositeColorsAtIndices(startIndex, targetIndex)) {
             // This kind of move is only valid if it is a capturing move. I.e, the target position only has one piece on it. */
-            if (Math.abs(positions._positions[endIndex]) != 1) {
+            if (!_positions.single(targetIndex)) {
                 throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempting to move a piece to an opponent's position with more than one piece on it.");
             }
         }
 
-        if (positions._positions[startIndex] > 0) { /* White's turn. */
-            positions._positions[startIndex] -= 1;
-            positions._positions[endIndex] += 1;
-        } else { /* Black's turn. */
-            positions._positions[startIndex] += 1;
-            positions._positions[endIndex] -= 1;
-        }
+        // FIXME: What happens if a piece is captured?
+        _positions.decrement(startIndex);
+        _positions.increment(targetIndex);
     }
 
     /** Get the number of pieces at the board position INDEX. Negative numbers indicate black pieces. */
@@ -106,31 +106,24 @@ public class Board {
         return _positions.get(index);
     }
 
-    /** Returns a byte array containing the indices of all the positions occupied by white if WHITE is true, else all black occupied positions. */
-    public ArrayList<Byte> occupiedPositions(boolean white) {
-        return positions.occupiedPositions(white);
-    }
-
     /** Return an array of all occupied positions of the active player. */
     public ArrayList<Byte> occupiedPositions() {
-        return positions.occupiedPositions();
+        return _positions.occupiedPositions(white());
     }
 
-    /** Returns true iff all of a player's pieces are in the end zone (final 6 positions), or have already "escaped" the
-     * board. The player that is checked for is given by the WHITE boolean.
-     */
-    public boolean allPiecesInEndZone(boolean white) {
-        return positions.allPiecesInEndZone(white);
+    /** Returns true iff the position at INDEX is occupied by the active player. */
+    boolean occupiedByActivePlayer(byte index) {
+        return _positions.occupiedBy(white(), index);
     }
 
     /** Returns true iff all the active player's pieces (on the board) are in the end zone. */
-    public boolean allPiecesInEndzone() {
-        return positions.allPiecesInEndzone();
+    public boolean allPiecesInEndZone() {
+        return _positions.allPiecesInEndZone(white());
     }
 
-    /** Return the number of white pieces remaining on the board if WHITE, else number of black pieces. */
-    public byte numPiecesRemaining(boolean white) {
-        return positions.numPiecesRemaining(white);
+    /** Return the number of pieces remaining on the board for the active player. */
+    public byte numPiecesRemaining() {
+        return _positions.numPiecesRemaining(white());
     }
 
     /** Returns true iff it is white's turn to play. */
@@ -189,7 +182,7 @@ public class Board {
         ArrayList<Byte> currentPlayerOccupied = occupiedPositions();
         for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
             byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
-            if (allPiecesInEndzone()) {
+            if (allPiecesInEndZone()) {
                 // Allow moves that perfectly take a piece to the end zone. (e.g. there is a piece at position 4 and 5
                 // and white rolls a 4. In this scenario, the piece at position 4 can escape to the end zone)
                 if ((white() && targetIndex == Positions.WHITE_END_ZONE_INDEX) || (!white() && targetIndex == Positions.BLACK_END_ZONE_INDEX)) {
@@ -198,7 +191,7 @@ public class Board {
                 // Allow moves that overshoot the end zone, given that no checker is placed farther from the end zone.
                 // For example,
             }
-            if (!allPiecesInEndzone() && (targetIndex < Positions.BOARD_START_INDEX || targetIndex >= Positions.BOARD_END_INDEX)) {
+            if (!allPiecesInEndZone() && (targetIndex < Positions.BOARD_START_INDEX || targetIndex >= Positions.BOARD_END_INDEX)) {
                 // TODO: once all pieces are in end zone, must consider moves that remove the pieces.
                 continue;
             }
@@ -226,11 +219,7 @@ public class Board {
 
     /** Returns true iff the active player has won the game. */
     public boolean gameOver() {
-        if (_white) {
-            return positions._positions[Positions.WHITE_END_ZONE_INDEX] == Positions.NUM_PIECES;
-        } else {
-            return positions._positions[Positions.BLACK_END_ZONE_INDEX] == Positions.NUM_PIECES;
-        }
+        return _positions.allEscaped(white());
     }
 
     /** True iff it is white's turn to play on this board. */
