@@ -242,8 +242,15 @@ public class Board {
     }
 
     /** Return the Dice associated with my board. */
+    // TODO: Should try to avoid returning the Dice object directly.
     public Dice getDice() {
         return _dice;
+    }
+
+    /** Returns true iff the player (designated by WHITE) has no pieces behind the position INDEX. **/
+    // TODO: Also ensure that no pieces are currently captured.
+    private boolean isLastPiece(byte index, boolean white) {
+        throw BackgammonError.notImplemented();
     }
 
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
@@ -253,6 +260,15 @@ public class Board {
         ArrayList<Byte> currentPlayerOccupied = occupiedPositions();
         for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
             byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
+            if (allPiecesInEndzone()) {
+                // Allow moves that perfectly take a piece to the end zone. (e.g. there is a piece at position 4 and 5
+                // and white rolls a 4. In this scenario, the piece at position 4 can escape to the end zone)
+                if ((white() && targetIndex == Board.WHITE_END_ZONE_INDEX) || (!white() && targetIndex == Board.BLACK_END_ZONE_INDEX)) {
+                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
+                }
+                // Allow moves that overshoot the end zone, given that no checker is placed farther from the end zone.
+                // For example,
+            }
             if (!allPiecesInEndzone() && (targetIndex < Board.BOARD_START_INDEX || targetIndex >= Board.BOARD_END_INDEX)) {
                 // TODO: once all pieces are in end zone, must consider moves that remove the pieces.
                 continue;
@@ -287,11 +303,13 @@ public class Board {
             return _positions[BLACK_END_ZONE_INDEX] == NUM_PIECES;
         }
     }
+
     /** Stores the number of white or black pieces at a given board location (indexed from 1-24).
      * Positive numbers indicate white pieces occupy the position, and negative indicate black pieces
      * occupy the position. Index 0 and 25 store the number of pieces that have managed to "escape" the board on either
      * side. The maximum allowed number of pieces in any position (except for indices 0 and 25) is 5.
      */
+    // TODO: Consider abstracting into a separate class together with methods relating to positions.
     private final byte[] _positions;
 
     /** True iff it is white's turn to play on this board. */
