@@ -10,6 +10,13 @@ public class Board {
     public static final byte BOARD_START_INDEX = 1;
     /** The final index of a piece on the board. That is, has not escaped. */
     public static final byte BOARD_END_INDEX = 24;
+    /** The end zone index for the black pieces **/
+    public static final byte BLACK_END_ZONE_INDEX = 0;
+    /** The end zone index for the white pieces **/
+    public static final byte WHITE_END_ZONE_INDEX = 25;
+
+    /** The number of pieces belonging to each side. **/
+    public static final byte NUM_PIECES = 15;
     /** The maximum number of pieces allowed in any given position. */
     public static final byte MAX_PIECES_PER_POSITION = 5;
 
@@ -47,7 +54,7 @@ public class Board {
     }
 
     public void printBoard() {
-        // Print the board coordinates for the top of the board (1-12). */
+        /* Print the board coordinates for the top of the board (1-12). */
         System.out.println();
         for (int i = 0; i <= 11; i++) {
             System.out.print(i);
@@ -60,7 +67,7 @@ public class Board {
         }
         System.out.println();
 
-        /** Print the pieces for the top half of the board (positions 1-12). */
+        /* Print the pieces for the top half of the board (positions 1-12). */
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 12; j++) {
                 byte numPieces = _positions[j];
@@ -79,13 +86,13 @@ public class Board {
             System.out.println();
         }
 
-        /** Print a board divider, through the middle of the baord. */
+        /* Print a board divider, through the middle of the baord. */
         for (int i = 0; i < Utils.BOARDSPACING * 12; i++) {
             System.out.print("-");
         }
         System.out.println();
 
-        /** Print the bottom half of the board (positions 13-24). */
+        /* Print the bottom half of the board (positions 13-24). */
         for (int i = 4; i >= 0; i--) {
             for (int j = BOARD_SIZE - 1; j >= BOARD_SIZE / 2; j--) {
                 byte numPieces = _positions[j];
@@ -104,7 +111,7 @@ public class Board {
             System.out.println();
         }
 
-        /** Print the coordinates for the bottom half of the board (positions 13-24). */
+        /* Print the coordinates for the bottom half of the board (positions 13-24). */
         for (int i = BOARD_SIZE - 1; i >= BOARD_SIZE / 2; i--) {
             System.out.print(i);
             Utils.printPadding(2);
@@ -117,7 +124,6 @@ public class Board {
         byte startIndex = move.start();
         byte endIndex = move.target();
 
-        // TODO: check whether white or black turn. Check there are actually pieces, etc.. */
         if (_positions[startIndex] == 0) {
             throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempted to move a piece from a position with no pieces.");
         }
@@ -235,6 +241,7 @@ public class Board {
         return _dice.second();
     }
 
+    /** Return the Dice associated with my board. */
     public Dice getDice() {
         return _dice;
     }
@@ -246,8 +253,8 @@ public class Board {
         ArrayList<Byte> currentPlayerOccupied = occupiedPositions();
         for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
             byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
-            /** TODO: once all pieces are in end zone, must consider moves that remove the pieces. */
             if (!allPiecesInEndzone() && (targetIndex < Board.BOARD_START_INDEX || targetIndex >= Board.BOARD_END_INDEX)) {
+                // TODO: once all pieces are in end zone, must consider moves that remove the pieces.
                 continue;
             }
             byte numberAtTarget = numberPiecesAt(targetIndex);
@@ -264,6 +271,7 @@ public class Board {
 
         return validMoves;
     }
+
     /** Return an array of all legal moves which can be made by using either roll first. */
     public ArrayList<Move> legalMoves() {
         ArrayList<Move> moves = legalMovesFromRoll(first());
@@ -271,6 +279,14 @@ public class Board {
         return moves;
     }
 
+    /** Returns true iff the active player has won the game. */
+    public boolean gameOver() {
+        if (_white) {
+            return _positions[WHITE_END_ZONE_INDEX] == NUM_PIECES;
+        } else {
+            return _positions[BLACK_END_ZONE_INDEX] == NUM_PIECES;
+        }
+    }
     /** Stores the number of white or black pieces at a given board location (indexed from 1-24).
      * Positive numbers indicate white pieces occupy the position, and negative indicate black pieces
      * occupy the position. Index 0 and 25 store the number of pieces that have managed to "escape" the board on either
@@ -280,7 +296,6 @@ public class Board {
 
     /** True iff it is white's turn to play on this board. */
     private boolean _white;
-    // TODO: consider making the board keep track of whose turn it is.
 
     /** A pair of dice associated with this board. */
     private final Dice _dice;
