@@ -2,13 +2,13 @@ import java.util.ArrayList;
 
 public class Game {
     /** The number of positions that the board has. */
-    private final byte BOARD_SIZE = Board.BOARD_SIZE;
+    private final byte BOARD_SIZE = Positions.BOARD_SIZE;
 
     /** The maximum number of pieces allowed in any given position. */
-    private final byte MAX_PIECES_PER_POSITION = Board.MAX_PIECES_PER_POSITION;
+    private final byte MAX_PIECES_PER_POSITION = Positions.MAX_PIECES_PER_POSITION;
 
     /** The number of positions that the end zones span. */
-    private final byte END_ZONE_SIZE = Board.END_ZONE_SIZE;
+    private final byte END_ZONE_SIZE = Positions.END_ZONE_SIZE;
 
     Game() {
         _board = new Board();
