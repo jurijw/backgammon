@@ -1,14 +1,20 @@
 import java.util.ArrayList;
 
 public class Game {
-    /** The number of positions that the board has. */
-    private final byte BOARD_SIZE = Positions.BOARD_SIZE;
+    /**
+     * The number of positions that the board has.
+     */
+    private final int BOARD_SIZE = Positions.BOARD_SIZE;
 
-    /** The maximum number of pieces allowed in any given position. */
-    private final byte MAX_PIECES_PER_POSITION = Positions.MAX_PIECES_PER_POSITION;
+    /**
+     * The maximum number of pieces allowed in any given position.
+     */
+    private final int MAX_PIECES_PER_POSITION = Positions.MAX_PIECES_PER_POSITION;
 
-    /** The number of positions that the end zones span. */
-    private final byte END_ZONE_SIZE = Positions.END_ZONE_SIZE;
+    /**
+     * The number of positions that the end zones span.
+     */
+    private final int END_ZONE_SIZE = Positions.END_ZONE_SIZE;
 
     Game() {
         _board = new Board();
@@ -17,7 +23,7 @@ public class Game {
 
     public void turn() {
         _board.roll();
-        byte numRollsRemaining = (byte) (_board.pasch() ? 4 : 2);
+        int numRollsRemaining = _board.pasch() ? 4 : 2;
 
         ArrayList<Move> legalMoves = _board.legalMoves(); // TODO: consider storing this array to avoid recomputing.
         while (numRollsRemaining > 0 && !legalMoves.isEmpty()) {
@@ -33,7 +39,9 @@ public class Game {
         }
     }
 
-    /** Determine which side starts the game.*/
+    /**
+     * Determine which side starts the game.
+     */
     private boolean doesWhiteStart() {
         if (_board.first() > _board.second()) {
             return true;
