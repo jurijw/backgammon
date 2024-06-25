@@ -24,7 +24,7 @@ public class Board {
         /* Print the pieces for the top half of the board (positions 1-12). */
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 12; j++) {
-                byte numPieces = _positions.get((byte) j);
+                int numPieces = _positions.get(j);
                 if (Math.abs(numPieces) > i) {
                     if (numPieces > 0) {
                         Utils.printWhite();
@@ -49,7 +49,7 @@ public class Board {
         /* Print the bottom half of the board (positions 13-24). */
         for (int i = 4; i >= 0; i--) {
             for (int j = Positions.BOARD_SIZE - 1; j >= Positions.BOARD_SIZE / 2; j--) {
-                byte numPieces = _positions.get((byte) j);
+                int numPieces = _positions.get(j);
                 if (Math.abs(numPieces) > i) {
                     if (numPieces > 0) {
                         Utils.printWhite();
@@ -75,8 +75,8 @@ public class Board {
 
     /** Applies the given MOVE to the BOARD, provided that the MOVE is valid. */
     public void makeMove(Move move) {
-        byte startIndex = move.start();
-        byte targetIndex = move.target();
+        int startIndex = move.start();
+        int targetIndex = move.target();
 
         if (!occupiedByActivePlayer(startIndex)) {
             throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempted to move a piece that does not belong to the" +
@@ -102,17 +102,17 @@ public class Board {
     }
 
     /** Get the number of pieces at the board position INDEX. Negative numbers indicate black pieces. */
-    public byte getNumberPiecesAt(byte index) {
+    public int getNumberPiecesAt(int index) {
         return _positions.get(index);
     }
 
     /** Return an array of all occupied positions of the active player. */
-    public ArrayList<Byte> occupiedPositions() {
+    public ArrayList<Integer> occupiedPositions() {
         return _positions.occupiedPositions(white());
     }
 
     /** Returns true iff the position at INDEX is occupied by the active player. */
-    boolean occupiedByActivePlayer(byte index) {
+    boolean occupiedByActivePlayer(int index) {
         return _positions.occupiedBy(white(), index);
     }
 
@@ -122,7 +122,7 @@ public class Board {
     }
 
     /** Return the number of pieces remaining on the board for the active player. */
-    public byte numPiecesRemaining() {
+    public int numPiecesRemaining() {
         return _positions.numPiecesRemaining(white());
     }
 
@@ -154,12 +154,12 @@ public class Board {
     }
 
     /** Return the score of my first die. */
-    public byte first() {
+    public int first() {
         return _dice.first();
     }
 
     /** Return the score of my second die. */
-    public byte second() {
+    public int second() {
         return _dice.second();
     }
 
@@ -171,17 +171,17 @@ public class Board {
 
     /** Returns true iff the active player has no pieces behind the position INDEX. **/
     // TODO: Also ensure that no pieces are currently captured.
-    private boolean isLastPiece(byte index) {
+    private boolean isLastPiece(int index) {
         return _positions.isLastPiece(index, white());
     }
 
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
-    public ArrayList<Move> legalMovesFromRoll(byte roll) {
-        roll = white() ? roll : (byte) -roll; // This allows black rolls to be counted as negative.
+    public ArrayList<Move> legalMovesFromRoll(int roll) {
+        roll = white() ? roll : -roll; // This allows black rolls to be counted as negative.
         ArrayList<Move> validMoves = new ArrayList<>();
-        ArrayList<Byte> currentPlayerOccupied = occupiedPositions();
-        for (byte currentPlayerOccupiedIndex : currentPlayerOccupied) {
-            byte targetIndex = (byte) (currentPlayerOccupiedIndex + roll);
+        ArrayList<Integer> currentPlayerOccupied = occupiedPositions();
+        for (int currentPlayerOccupiedIndex : currentPlayerOccupied) {
+            int targetIndex = currentPlayerOccupiedIndex + roll;
             if (allPiecesInEndZone()) {
                 // Allow moves that perfectly take a piece to the end zone. (e.g. there is a piece at position 4 and 5
                 // and white rolls a 4. In this scenario, the piece at position 4 can escape to the end zone)
@@ -195,7 +195,7 @@ public class Board {
                 // TODO: once all pieces are in end zone, must consider moves that remove the pieces.
                 continue;
             }
-            byte numberAtTarget = getNumberPiecesAt(targetIndex);
+            int numberAtTarget = getNumberPiecesAt(targetIndex);
             if (white()) {
                 if (numberAtTarget >= -1 && numberAtTarget < Positions.MAX_PIECES_PER_POSITION) {
                     validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
