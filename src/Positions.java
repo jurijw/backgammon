@@ -63,6 +63,8 @@ public class Positions {
 
     public Positions() {
         this._positions = DEFAULT_BOARD_SETUP;
+        this._capturedPiecesWhite = 0;
+        this._capturedPiecesBlack = 0;
     }
 
     /**
@@ -105,6 +107,31 @@ public class Positions {
         checkValidIndex(index, "");
     }
 
+    /** Throws an error if INDEX is not a valid board index. MESSAGE is used to pass additional error information. */
+    private void checkValidBoardIndex(int index, String message) {
+        if (!validBoardIndex(index)) { throw new BackgammonError("INVALID BOARD INDEX: " + message); }
+    }
+
+    /** Throws an error if INDEX is not a valid board index without adding additional error information. */
+    private void checkValidBoardIndex(int index) {
+        checkValidIndex(index, "");
+    }
+
+    /**
+     * Returns true iff INDEX is valid for the _POSITIONS array.
+     */
+    boolean validPositionIndex(int index) {
+        return (0 <= index) && (index <= _positions.length);
+    }
+
+    /**
+     * Returns true iff INDEX is a valid board index, meaning the index refers to a position ON THE BOARD. That is,
+     * not to an index in the _positions array that stores captured or escaped pieces.
+     */
+    boolean validBoardIndex(int index) {
+        return index < BOARD_START_INDEX || index > BOARD_END_INDEX;
+    }
+
     /**
      * Returns true iff there are no pieces at position INDEX, given that index is valid.
      */
@@ -121,26 +148,29 @@ public class Positions {
     }
 
     /**
-     * Returns true iff the position at INDEX is fully occupied. The index must refer to a position ON THE BOARD. That
-     * is, not to a part of the _positions array that stores escaped or captured pieces. (Indices 1-24)
+     * Returns true iff the position at INDEX is fully occupied.
      */
     public boolean full(int index) {
+        if (index == WHITE_END_ZONE_INDEX || index == BLACK_END_ZONE_INDEX) {
+            return Math.abs(get(index)) == NUM_PIECES;
+        }
         return Math.abs(get(index)) == MAX_PIECES_PER_POSITION;
     }
 
-    /**
-     * Returns true iff INDEX is valid for the _POSITIONS array.
+    /** Returns true iff the INDEX provided can be moved to by the player specified by WHITE. That is, the position
+     * is empty, contains only one of the opponent's pieces (indicating it can be captured), or the position is not
+     * fully occupied by pieces of the specified player.
      */
-    boolean validPositionIndex(int index) {
-        return (0 <= index) && (index <= _positions.length);
-    }
-
-    /**
-     * Returns true iff INDEX is a valid board index, meaning the index refers to a position ON THE BOARD. That is,
-     * not to an index in the _positions array that stores captured or escaped pieces.
-     */
-    boolean validBoardIndex(int index) {
-        return index < BOARD_START_INDEX || index > BOARD_END_INDEX;
+    public boolean positionCanBeMovedToBy(int index, boolean white) {
+        if (full(index)) {
+            return false;
+        }
+        /* Ensure that a player cannot move to the opponent's end zone. */
+        if ((index == WHITE_END_ZONE_INDEX && !white) || (index == BLACK_END_ZONE_INDEX && white)) {
+            return false;
+        }
+        int piecesAtPos = get(index);
+        return white ? piecesAtPos >= -1 : piecesAtPos <= 1;
     }
 
     /**
@@ -266,14 +296,6 @@ public class Positions {
     }
 
     /**
-     * Stores the number of white or black pieces at a given board location (indexed from 1-24).
-     * Positive numbers indicate white pieces occupy the position, and negative indicate black pieces
-     * occupy the position. Index 0 and 25 store the number of pieces that have managed to "escape" the board on either
-     * side. The maximum allowed number of pieces in any position (except for indices 0 and 25) is 5.
-     */
-    final int[] _positions;
-
-    /**
      * Returns true iff the position at INDEX is occupied by white pieces if WHITE, else occupied by black pieces.
      */
     public boolean occupiedBy(boolean white, int index) {
@@ -289,4 +311,18 @@ public class Positions {
     boolean allEscaped(boolean white) {
         throw BackgammonError.notImplemented();
     }
+
+    /**
+     * Stores the number of white or black pieces at a given board location (indexed from 1-24).
+     * Positive numbers indicate white pieces occupy the position, and negative indicate black pieces
+     * occupy the position. Index 0 and 25 store the number of pieces that have managed to "escape" the board on either
+     * side. The maximum allowed number of pieces in any position (except for indices 0 and 25) is 5.
+     */
+    private final int[] _positions;
+
+    /** Stores the number of white captured pieces. */
+    private final int _capturedPiecesWhite;
+
+    /** Stores the number of black captured pieces. */
+    private final int _capturedPiecesBlack;
 }
