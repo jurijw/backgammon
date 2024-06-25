@@ -7,6 +7,7 @@ public class Board {
         _positions = new Positions();
     }
 
+    // TODO: Consider abstracting away into a View class.
     public void printBoard() {
         /* Print the board coordinates for the top of the board (1-12). */
         System.out.println();
@@ -175,6 +176,16 @@ public class Board {
         return _positions.isLastPiece(index, white());
     }
 
+    /** Return the position index for the end zone of the active player. */
+    private int activePlayerEndZoneIndex() {
+        return white() ? Positions.WHITE_END_ZONE_INDEX : Positions.BLACK_END_ZONE_INDEX;
+    }
+
+    /** Return true iff INDEX corresponds to the active player's end zone index. */
+    private boolean isActivePlayerEndZoneIndex(int index) {
+        return index == activePlayerEndZoneIndex();
+    }
+
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
     public ArrayList<Move> legalMovesFromRoll(int roll) {
         roll = white() ? roll : -roll; // This allows black rolls to be counted as negative.
@@ -185,13 +196,14 @@ public class Board {
             if (allPiecesInEndZone()) {
                 // Allow moves that perfectly take a piece to the end zone. (e.g. there is a piece at position 4 and 5
                 // and white rolls a 4. In this scenario, the piece at position 4 can escape to the end zone)
-                if ((white() && targetIndex == Positions.WHITE_END_ZONE_INDEX) || (!white() && targetIndex == Positions.BLACK_END_ZONE_INDEX)) {
+                if (isActivePlayerEndZoneIndex(targetIndex)) {
                     validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
                 }
+                // TODO:
                 // Allow moves that overshoot the end zone, given that no checker is placed farther from the end zone.
                 // For example,
             }
-            if (!allPiecesInEndZone() && (targetIndex < Positions.BOARD_START_INDEX || targetIndex >= Positions.BOARD_END_INDEX)) {
+            if (allPiecesInEndZone() && (targetIndex < Positions.BOARD_START_INDEX || targetIndex >= Positions.BOARD_END_INDEX)) {
                 // TODO: once all pieces are in end zone, must consider moves that remove the pieces.
                 continue;
             }
