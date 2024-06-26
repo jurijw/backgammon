@@ -11,27 +11,11 @@ public class Positions {
      */
     public static final int BOARD_SIZE = 24;
     /**
-     * The first index of a piece on the board. That is, has not escaped.
-     */
-    public static final int BOARD_START_INDEX = 1;
-    /**
-     * The final index of a piece on the board. That is, has not escaped.
-     */
-    public static final int BOARD_END_INDEX = 24;
-    /**
-     * The end zone index for the black pieces
-     **/
-    public static final int BLACK_END_ZONE_INDEX = 0;
-    /**
-     * The end zone index for the white pieces
-     **/
-    public static final int WHITE_END_ZONE_INDEX = 25;
-    /**
      * The number of pieces belonging to each side.
      **/
     public static final int NUM_PIECES = 15;
     /**
-     * The maximum number of pieces allowed in any given position.
+     * The maximum number of pieces allowed at any given board position.
      */
     public static final int MAX_PIECES_PER_POSITION = 5;
     /**
@@ -41,15 +25,15 @@ public class Positions {
     /**
      * The start index for the black end zone.
      */
-    public static final int END_ZONE_START_INDEX_BLACK = 1;
+    public static final int END_ZONE_START_INDEX_BLACK = 0;
     /**
      * The end index for the black end zone.
      */
-    public static final int END_ZONE_END_INDEX_BLACK = 6;
+    public static final int END_ZONE_END_INDEX_BLACK = 5;
     /**
      * The start index for the white end zone.
      */
-    public static final int END_ZONE_START_INDEX_WHITE = 18;
+    public static final int END_ZONE_START_INDEX_WHITE = 17;
     /**
      * The start index for the black end zone.
      */
@@ -58,13 +42,15 @@ public class Positions {
      * The default board setup structure. The leading and trailing zeros here track the number of
      * pieces that have "escaped" the board on either side, respectively.
      */
-    public static final int[] DEFAULT_BOARD_SETUP = {0, 2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5,
-            -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 0};
+    public static final int[] DEFAULT_BOARD_SETUP = {2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5,
+            -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5};
 
     public Positions() {
         this._positions = DEFAULT_BOARD_SETUP;
         this._capturedPiecesWhite = 0;
         this._capturedPiecesBlack = 0;
+        this._endZonePiecesWhite = 0;
+        this._endZonePiecesBlack = 0;
     }
 
     /**
@@ -95,7 +81,7 @@ public class Positions {
      * Throws an error if the passed INDEX is not valid. Appends MESSAGE to the error message
      */
     private void checkValidIndex(int index, String message) {
-        if (!validPositionIndex(index)) {
+        if (!validIndex(index)) {
             throwInvalidPositionIndexError(message);
         }
     }
@@ -109,7 +95,7 @@ public class Positions {
 
     /** Throws an error if INDEX is not a valid board index. MESSAGE is used to pass additional error information. */
     private void checkValidBoardIndex(int index, String message) {
-        if (!validBoardIndex(index)) { throw new BackgammonError("INVALID BOARD INDEX: " + message); }
+        if (!validIndex(index)) { throw new BackgammonError("INVALID BOARD INDEX: " + message); }
     }
 
     /** Throws an error if INDEX is not a valid board index without adding additional error information. */
@@ -118,18 +104,10 @@ public class Positions {
     }
 
     /**
-     * Returns true iff INDEX is valid for the _POSITIONS array.
+     * Returns true iff INDEX refers to a valid position on the board (i.e in the _position[] array).
      */
-    boolean validPositionIndex(int index) {
-        return (0 <= index) && (index <= _positions.length);
-    }
-
-    /**
-     * Returns true iff INDEX is a valid board index, meaning the index refers to a position ON THE BOARD. That is,
-     * not to an index in the _positions array that stores captured or escaped pieces.
-     */
-    boolean validBoardIndex(int index) {
-        return index < BOARD_START_INDEX || index > BOARD_END_INDEX;
+    boolean validIndex(int index) {
+        return (0 <= index) && (index < BOARD_SIZE);
     }
 
     /**
@@ -151,9 +129,6 @@ public class Positions {
      * Returns true iff the position at INDEX is fully occupied.
      */
     public boolean full(int index) {
-        if (index == WHITE_END_ZONE_INDEX || index == BLACK_END_ZONE_INDEX) {
-            return Math.abs(get(index)) == NUM_PIECES;
-        }
         return Math.abs(get(index)) == MAX_PIECES_PER_POSITION;
     }
 
@@ -163,10 +138,6 @@ public class Positions {
      */
     public boolean positionCanBeMovedToBy(int index, boolean white) {
         if (full(index)) {
-            return false;
-        }
-        /* Ensure that a player cannot move to the opponent's end zone. */
-        if ((index == WHITE_END_ZONE_INDEX && !white) || (index == BLACK_END_ZONE_INDEX && white)) {
             return false;
         }
         int piecesAtPos = get(index);
@@ -194,6 +165,7 @@ public class Positions {
      * board. The player that is checked for is given by the WHITE boolean.
      */
     public boolean allPiecesInEndZone(boolean white) {
+        // TODO: Can probably do without a call to occupiedPositions()
         ArrayList<Integer> occupiedPositions = occupiedPositions(white);
         for (int position : occupiedPositions) {
             if ((white && position <= END_ZONE_START_INDEX_WHITE) || (!white && position >= END_ZONE_END_INDEX_BLACK)) {
@@ -239,18 +211,12 @@ public class Positions {
     }
 
     /**
-     * Returns true iff there is exactly one piece at INDEX.
+     * Returns true iff there is exactly one piece at INDEX, regardless of color.
      */
     boolean single(int index) {
         return Math.abs(get(index)) == 1;
     }
 
-    /**
-     * Returns true iff white occupies the given INDEX.
-     */
-    boolean whiteAt(int index) {
-        return get(index) > 0;
-    }
 
     /**
      * Increments the number of pieces at a given INDEX, maintaining the color of the pieces at that index. For
@@ -296,6 +262,13 @@ public class Positions {
     }
 
     /**
+     * Returns true iff white occupies the given INDEX.
+     */
+    boolean whiteAt(int index) {
+        return get(index) > 0;
+    }
+
+    /**
      * Returns true iff the position at INDEX is occupied by white pieces if WHITE, else occupied by black pieces.
      */
     public boolean occupiedBy(boolean white, int index) {
@@ -321,8 +294,14 @@ public class Positions {
     private final int[] _positions;
 
     /** Stores the number of white captured pieces. */
-    private final int _capturedPiecesWhite;
+    private int _capturedPiecesWhite;
 
     /** Stores the number of black captured pieces. */
-    private final int _capturedPiecesBlack;
+    private int _capturedPiecesBlack;
+
+    /** Stores the number of white escaped pieces. */
+    private int _endZonePiecesWhite;
+
+    /** Stores the number of black escaped pieces. */
+    private int _endZonePiecesBlack;
 }

@@ -176,16 +176,6 @@ public class Board {
         return _positions.isLastPiece(index, white());
     }
 
-    /** Return the position index for the end zone of the active player. */
-    private int activePlayerEndZoneIndex() {
-        return white() ? Positions.WHITE_END_ZONE_INDEX : Positions.BLACK_END_ZONE_INDEX;
-    }
-
-    /** Return true iff INDEX corresponds to the active player's end zone index. */
-    private boolean isActivePlayerEndZoneIndex(int index) {
-        return index == activePlayerEndZoneIndex();
-    }
-
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
     public ArrayList<Move> legalMovesFromRoll(int roll) {
         roll = white() ? roll : -roll; // This allows black rolls to be counted as negative.
