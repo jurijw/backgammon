@@ -6,16 +6,6 @@ public class Game {
      */
     private final int BOARD_SIZE = Positions.BOARD_SIZE;
 
-    /**
-     * The maximum number of pieces allowed in any given position.
-     */
-    private final int MAX_PIECES_PER_POSITION = Positions.MAX_PIECES_PER_POSITION;
-
-    /**
-     * The number of positions that the end zones span.
-     */
-    private final int END_ZONE_SIZE = Positions.END_ZONE_SIZE;
-
     Game() {
         _board = new Board();
         _board.setTurn(doesWhiteStart());

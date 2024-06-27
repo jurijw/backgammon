@@ -107,11 +107,6 @@ public class Board {
         return _positions.get(index);
     }
 
-    /** Return an array of all occupied positions of the active player. */
-    public ArrayList<Integer> occupiedPositions() {
-        return _positions.occupiedPositions(white());
-    }
-
     /** Returns true iff the position at INDEX is occupied by the active player. */
     boolean occupiedByActivePlayer(int index) {
         return _positions.occupiedBy(white(), index);
@@ -124,7 +119,7 @@ public class Board {
 
     /** Return the number of pieces remaining on the board for the active player. */
     public int numPiecesRemaining() {
-        return _positions.numPiecesRemaining(white());
+        return _positions.numPiecesRemainingOnBoard(white());
     }
 
     /** Returns true iff it is white's turn to play. */
@@ -171,51 +166,50 @@ public class Board {
     }
 
     /** Returns true iff the active player has no pieces behind the position INDEX. **/
-    // TODO: Also ensure that no pieces are currently captured.
-    private boolean isLastPiece(int index) {
-        return _positions.isLastPiece(index, white());
+    private boolean isLastPieceOnBoard(int index) {
+        return _positions.isLastPieceOnBoard(index, white());
     }
 
-    /** Return the position index for the end zone of the active player. */
-    private int activePlayerEndZoneIndex() {
-        return white() ? Positions.WHITE_END_ZONE_INDEX : Positions.BLACK_END_ZONE_INDEX;
+    /** Returns an integer array containing the indices of all occupied board positions of the active player. */
+    private ArrayList<Integer> activePlayerBoardPositions() {
+        return _positions.occupiedBoardPositions(white());
     }
 
-    /** Return true iff INDEX corresponds to the active player's end zone index. */
-    private boolean isActivePlayerEndZoneIndex(int index) {
-        return index == activePlayerEndZoneIndex();
+    /** Returns true iff at least one of the active player's pieces has been captured. */
+    private boolean activePlayerHasBeenCaptured() {
+        return _positions.hasCapturedPiece(white());
+    }
+
+    /** Returns true iff the board position at INDEX can be moved to by the active player.
+     *  That is, it is either empty, or contains only one of the opponents pieces.
+     */
+    private boolean positionCanBeMovedToByActivePlayer(int index) {
+        return _positions.positionCanBeMovedToBy(index, white());
     }
 
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
     public ArrayList<Move> legalMovesFromRoll(int roll) {
-        roll = white() ? roll : -roll; // This allows black rolls to be counted as negative.
         ArrayList<Move> validMoves = new ArrayList<>();
-        ArrayList<Integer> currentPlayerOccupied = occupiedPositions();
-        for (int currentPlayerOccupiedIndex : currentPlayerOccupied) {
-            int targetIndex = currentPlayerOccupiedIndex + roll;
+        if (activePlayerHasBeenCaptured()) {
+            /* Only permit moves that free the captured piece(s). */
+            int targetIndex = white() ? Positions.BOARD_SIZE - roll : roll - 1;
+            if (positionCanBeMovedToByActivePlayer(targetIndex)) {
+                // Add the move
+            }
+        }
+        roll = white() ? roll : -roll; // This allows black rolls to be counted as negative.
+        for (int startIndex : activePlayerBoardPositions()) {
+            int targetIndex = startIndex + roll;
             if (allPiecesInEndZone()) {
-                // Allow moves that perfectly take a piece to the end zone. (e.g. there is a piece at position 4 and 5
-                // and white rolls a 4. In this scenario, the piece at position 4 can escape to the end zone)
-                if (isActivePlayerEndZoneIndex(targetIndex)) {
-                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
+                if (isLastPieceOnBoard(startIndex)) {
+                    // Allow any move that overshoots the board (i.e takes it off the board)
+                } else {
+                    // Allow moves that perfectly take a piece to the end zone. (e.g. there is a piece at position 4 and 5
+                    // and white rolls a 4. In this scenario, the piece at position 4 can escape to the end zone)
                 }
-                // TODO:
-                // Allow moves that overshoot the end zone, given that no checker is placed farther from the end zone.
-                // For example,
             }
-            if (allPiecesInEndZone() && (targetIndex < Positions.BOARD_START_INDEX || targetIndex >= Positions.BOARD_END_INDEX)) {
-                // TODO: once all pieces are in end zone, must consider moves that remove the pieces.
-                continue;
-            }
-            int numberAtTarget = getNumberPiecesAt(targetIndex);
-            if (white()) {
-                if (numberAtTarget >= -1 && numberAtTarget < Positions.MAX_PIECES_PER_POSITION) {
-                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
-                }
-            } else {
-                if (numberAtTarget <= 1 && numberAtTarget > -Positions.MAX_PIECES_PER_POSITION) {
-                    validMoves.add(new Move(currentPlayerOccupiedIndex, targetIndex));
-                }
+            if (_positions.positionCanBeMovedToBy(targetIndex, white())) {
+                // Add move.
             }
         }
 
