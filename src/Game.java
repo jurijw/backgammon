@@ -9,7 +9,7 @@ public class Game {
     /**
      * The maximum number of pieces allowed in any given position.
      */
-    private final int MAX_PIECES_PER_POSITION = Positions.MAX_PIECES_PER_POSITION;
+    private final int MAX_PIECES_PER_POSITION = Positions.MAX_PIECES_PER_BOARD_POSITION;
 
     /**
      * The number of positions that the end zones span.
