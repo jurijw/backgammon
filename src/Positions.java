@@ -129,12 +129,12 @@ public class Positions {
     }
 
     /** Throws an error if INDEX is not a valid board index. MESSAGE is used to pass additional error information. */
-    private void checkValidBoardIndex(String message, int... indices) {
+    public void checkValidBoardIndex(String message, int... indices) {
         if (!validBoardIndex(indices)) { throw new BackgammonError("INVALID BOARD INDEX: " + message); }
     }
 
     /** Throws an error if INDEX is not a valid board index without adding additional error information. */
-    private void checkValidBoardIndex(int... indices) {
+    public void checkValidBoardIndex(int... indices) {
         checkValidBoardIndex("", indices);
     }
 
@@ -152,6 +152,7 @@ public class Positions {
         return !empty(index);
     }
 
+    // TODO: This should really only be called on board indices.
     /**
      * Returns true iff the position at INDEX is fully occupied.
      */
@@ -189,25 +190,10 @@ public class Positions {
         return numCaptured(white) > 0;
     }
 
-    // TODO: Consider refactoring to Board.java. This really is a game logic related method rather than one about
-    //  storing the positions of pieces.
-    /** Returns true iff the INDEX provided can be moved to by the player specified by WHITE. That is, the position
-     * is empty, contains only one of the opponent's pieces (indicating it can be captured), or the position is not
-     * fully occupied by pieces of the specified player.
-     */
-    public boolean positionCanBeMovedToBy(int index, boolean white) {
-        if (full(index)) {
-            return false;
-        }
-        int numPiecesAtPos = get(index);
-        return white ? numPiecesAtPos >= -1 : numPiecesAtPos <= 1;
-    }
-
     /**
      * Returns an integer array containing the indices of all the positions occupied by white if WHITE is
      * true, else all black occupied positions.
      */
-    // TODO: Check that usages aren't affected now that this includes captured / escaped pieces.
     private ArrayList<Integer> occupiedPositions(boolean white) {
         ArrayList<Integer> occupiedPositions = new ArrayList<>();
         for (int i = 0; i < SIZE; i++) {
@@ -222,11 +208,11 @@ public class Positions {
     /** Return an integer array containing the indices of all the positions ON THE BOARD occupied by the player
      * specified by WHITE. */
     public ArrayList<Integer> occupiedBoardPositions(boolean white) {
-        return (ArrayList<Integer>) occupiedBoardPositions(white).subList(0, BOARD_SIZE);
+        return (ArrayList<Integer>) occupiedPositions(white).subList(0, BOARD_SIZE);
     }
 
     /** Return true if an INDEX (which must be valid) is in the end zone of the player specified by WHITE. */
-    private boolean isEndZonePosition(int index, boolean white) {
+    public boolean isEndZonePosition(int index, boolean white) {
         checkValidIndex(index);
         if (white) {
             return (END_ZONE_START_INDEX_WHITE <= index) && (index <= END_ZONE_END_INDEX_WHITE);
@@ -235,54 +221,6 @@ public class Positions {
         }
     }
 
-    /**
-     * Returns true iff all of a player's pieces are in the end zone (final 6 positions), or have already "escaped" the
-     * board. The player that is checked for is given by the WHITE boolean.
-     */
-    public boolean allPiecesInEndZone(boolean white) {
-        // TODO: Can probably do without a call to occupiedPositions()
-        ArrayList<Integer> occupiedBoardPositions = occupiedBoardPositions(white);
-        for (int position : occupiedBoardPositions) {
-            if (!isEndZonePosition(position, white)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-
-    /**
-     * Return the number of white pieces remaining on the board if WHITE, else number of black pieces.
-     */
-    public int numPiecesRemainingOnBoard(boolean white) {
-        int count = 0;
-        for (int position : occupiedBoardPositions(white)) {
-            count += get(position);
-        }
-        return count;
-    }
-
-    // TODO: Consider refactor - this has to do with logic a bit? maybe a bit less
-    /**
-     * Returns true iff the player (designated by WHITE) has no pieces behind the position INDEX on the board.
-     **/
-    public boolean isLastPieceOnBoard(int index, boolean white) {
-        for (int position : occupiedBoardPositions(white)) {
-            if (position > index) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Returns true iff the pieces at INDEX1 and INDEX2 are of opposite color. Indices should refer positions ON THE
-     * BOARD.
-     */
-    public boolean oppositeColorsAtIndices(int index1, int index2) {
-        checkValidBoardIndex(index1, index2);
-        return (get(index1) ^ get(index2)) < 0;
-    }
 
     /**
      * Returns true iff there is exactly one piece at INDEX, regardless of color.

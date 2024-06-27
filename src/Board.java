@@ -90,7 +90,7 @@ public class Board {
             throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempted to move a piece to a full position.");
         }
 
-        if (_positions.oppositeColorsAtIndices(startIndex, targetIndex)) {
+        if (oppositeColorsAtIndices(startIndex, targetIndex)) {
             // This kind of move is only valid if it is a capturing move. I.e, the target position only has one piece on it. */
             if (!_positions.single(targetIndex)) {
                 throw new BackgammonError("INVALID CAPTURE ATTEMPT: Attempting to move a piece to an opponent's position with more than one piece on it.");
@@ -100,6 +100,16 @@ public class Board {
         // FIXME: What happens if a piece is captured?
         _positions.decrement(startIndex);
         _positions.increment(targetIndex);
+    }
+
+
+    /**
+     * Returns true iff the pieces at INDEX1 and INDEX2 are of opposite color. Indices should refer positions ON THE
+     * BOARD.
+     */
+    public boolean oppositeColorsAtIndices(int index1, int index2) {
+        _positions.checkValidBoardIndex(index1, index2);
+        return (_positions.get(index1) ^ _positions.get(index2)) < 0;
     }
 
     /** Get the number of pieces at the board position INDEX. Negative numbers indicate black pieces. */
@@ -114,12 +124,47 @@ public class Board {
 
     /** Returns true iff all the active player's pieces (on the board) are in the end zone. */
     public boolean allPiecesInEndZone() {
-        return _positions.allPiecesInEndZone(white());
+        return allPiecesInEndZone(white());
     }
 
+    /**
+     * Return the number of white pieces remaining on the board if WHITE, else number of black pieces.
+     */
+    public int numPiecesRemainingOnBoard(boolean white) {
+        int count = 0;
+        for (int position : _positions.occupiedBoardPositions(white)) {
+            count += _positions.get(position);
+        }
+        return count;
+    }
     /** Return the number of pieces remaining on the board for the active player. */
     public int numPiecesRemaining() {
-        return _positions.numPiecesRemainingOnBoard(white());
+        return numPiecesRemainingOnBoard(white());
+    }
+
+    /**
+     * Returns true iff the player (designated by WHITE) has no pieces behind the position INDEX on the board.
+     **/
+    public boolean isLastPieceOnBoard(int index, boolean white) {
+        for (int position : _positions.occupiedBoardPositions(white)) {
+            if (position > index) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Returns true iff all of a player's pieces are in the end zone (final 6 positions), or have already "escaped" the
+     * board. The player that is checked for is given by the WHITE boolean.
+     */
+    public boolean allPiecesInEndZone(boolean white) {
+        for (int position : _positions.occupiedBoardPositions(white)) {
+            if (!_positions.isEndZonePosition(position, white)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Returns true iff it is white's turn to play. */
@@ -167,7 +212,7 @@ public class Board {
 
     /** Returns true iff the active player has no pieces behind the position INDEX. **/
     private boolean isLastPieceOnBoard(int index) {
-        return _positions.isLastPieceOnBoard(index, white());
+        return isLastPieceOnBoard(index, white());
     }
 
     /** Returns an integer array containing the indices of all occupied board positions of the active player. */
@@ -180,11 +225,23 @@ public class Board {
         return _positions.hasCapturedPiece(white());
     }
 
+    /** Returns true iff the INDEX provided can be moved to by the player specified by WHITE. That is, the position
+     * is empty, contains only one of the opponent's pieces (indicating it can be captured), or the position is not
+     * fully occupied by pieces of the specified player.
+     */
+    public boolean positionCanBeMovedToBy(int index, boolean white) {
+        if (_positions.full(index)) {
+            return false;
+        }
+        int numPiecesAtPos = _positions.get(index);
+        return white ? numPiecesAtPos >= -1 : numPiecesAtPos <= 1;
+    }
+
     /** Returns true iff the board position at INDEX can be moved to by the active player.
      *  That is, it is either empty, or contains only one of the opponents pieces.
      */
     private boolean positionCanBeMovedToByActivePlayer(int index) {
-        return _positions.positionCanBeMovedToBy(index, white());
+        return positionCanBeMovedToBy(index, white());
     }
 
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
@@ -208,7 +265,7 @@ public class Board {
                     // and white rolls a 4. In this scenario, the piece at position 4 can escape to the end zone)
                 }
             }
-            if (_positions.positionCanBeMovedToBy(targetIndex, white())) {
+            if (positionCanBeMovedToBy(targetIndex, white())) {
                 // Add move.
             }
         }
