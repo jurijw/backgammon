@@ -1,3 +1,4 @@
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -12,21 +13,26 @@ public class Game {
     }
 
     public void turn() {
-        _state.roll();
-        int numRollsRemaining = _state.pasch() ? 4 : 2;
+        _state.roll(); // TODO: Dice should not be rerolled on the first turn.
 
-        Set<Move> legalMoves
-                = _state.legalMoves(); // TODO: consider storing this array to avoid recomputing.
-        while (numRollsRemaining > 0 && !legalMoves.isEmpty()) {
+        Set<Integer> availableRolls = _state.getAvailableRolls();
+        List<Move> legalMoves = _state.getLegalMoves();
+        // TODO: Could consider making the roll part of the Move object, however, this would
+        //  involve storing six times the moves in the move class. But since these moves are
+        //  computed before running any kind of AI, this should not be terrible...
+        List<Integer> legalMovesCorrespondingRolls = _state.getLegalMoveCorrespondingRolls();
+
+        while (!availableRolls.isEmpty() && !legalMoves.isEmpty()) {
             print();
             // FIXME: this is just temporary - makes a random move
-            Move move = Utils.selectRandomFromArray(legalMoves);
+            // TODO: Use an interface for selecting moves
+            Move move = Utils.selectRandom(legalMoves);
             System.out.println(move);
-            makeMove(move);
+            makeMove(move); // TODO: the makeMove method should remove the applied roll from
+            // _available rolls in the State class.
 
-            // FIXME: compute legal moves only with dice that haven't been used yet in this turn.
 
-            numRollsRemaining -= 1;
+
         }
     }
 
@@ -57,9 +63,10 @@ public class Game {
         String side = _state.white() ? "WHITE" : "BLACK";
         System.out.println("TURN: " + side);
 
-        System.out.println(_state.getDice());
-        printBoard();
-        System.out.println(_state.legalMoves());
+        // TODO: This should all be handles in the State class.
+        // System.out.println(_state.getDice());
+        // printBoard();
+        // System.out.println(_state.legalMoves());
     }
 
 

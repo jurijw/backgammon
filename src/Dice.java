@@ -1,6 +1,3 @@
-import java.util.ArrayList;
-import java.util.List;
-
 public class Dice {
     /** The number of sides of a die. */
     public static final int NUM_SIDES = 6;
@@ -9,7 +6,6 @@ public class Dice {
     Dice() {
         _first = 0;
         _second = 0;
-        _availableRolls = new ArrayList<>();
     }
 
     /** Instantiate a pair of dice with values FIRST and SECOND, respectively. */
@@ -17,7 +13,6 @@ public class Dice {
         super();
         _first = first;
         _second = second;
-        setAvailableRolls();
     }
 
     /** Getter for the value of my first dice roll. */
@@ -30,28 +25,17 @@ public class Dice {
         return _second;
     }
 
-    /** Roll my dice and update the values of the rolls. Also stores the rolls in a list, to
-     * track if they have been used to make a move already. In the case of a Pasch, the list
-     * stores the rolled value four times. */
+
+    /**
+     * Roll my dice and update the values of the rolls. Also stores the rolls in a list, to track if
+     * they have been used to make a move already. In the case of a Pasch, the list stores the
+     * rolled value four times.
+     */
     public void roll() {
         _first = generateRoll();
         _second = generateRoll();
-        setAvailableRolls();
     }
 
-    /**
-     * Set the available rolls based on the value of the rolled dice. In the case of a Pasch,
-     * this stores the rolled values twice, as a player may make up to four moves.
-     */
-    private void setAvailableRolls() {
-        _availableRolls.clear();
-        _availableRolls.add(first());
-        _availableRolls.add(second());
-        if (pasch()) {
-            _availableRolls.add(first());
-            _availableRolls.add(second());
-        }
-    }
     /**
      * Generate a random dice roll. Assumes a NUM_SIDES sided dice, where every integer between 1
      * and NUM_SIDES has equal (uniform) probability of occurring.
@@ -75,11 +59,4 @@ public class Dice {
 
     /** The value of my second roll. */
     private int _second;
-
-    /**
-     * A list of available rolls. That is rolls that have not yet been used to make a move in a
-     * given turn. If a Pasch is rolled (say two 3s), then this will store four 3s, as active player
-     * can make up to four moves, using each of the four 3s one time.
-     */
-    private List<Integer> _availableRolls;
 }

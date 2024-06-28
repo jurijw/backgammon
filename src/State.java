@@ -9,6 +9,9 @@ public class State {
     State() {
         _dice = new Dice();
         _positions = new Positions();
+        _availableRolls = new HashSet<>();
+        _legalMoves = new ArrayList<>();
+        _legalMoveCorrespondingRolls = new ArrayList<>();
     }
 
     // TODO: Consider abstracting away into a View class.
@@ -83,19 +86,19 @@ public class State {
         int startIndex = move.start();
         int targetIndex = move.target();
 
-        if (!occupiedByActivePlayer(startIndex)) {
-            throw new BackgammonError(
-                    "INVALID CAPTURE ATTEMPT: Attempted to move a piece that does not belong to the"
-                            + " active player.");
-        }
         if (_positions.empty(startIndex)) {
             throw new BackgammonError(
-                    "INVALID CAPTURE ATTEMPT: Attempted to move a piece from a position with no "
+                    "INVALID MOVE ATTEMPT: Attempted to move a piece from a position with no "
                             + "pieces.");
+        }
+        if (!occupiedByActivePlayer(startIndex)) {
+            throw new BackgammonError(
+                    "INVALID MOVE ATTEMPT: Attempted to move a piece that does not belong to the"
+                            + " active player.");
         }
         if (_positions.full(targetIndex)) {
             throw new BackgammonError(
-                    "INVALID CAPTURE ATTEMPT: Attempted to move a piece to a full position.");
+                    "INVALID MOVE ATTEMPT: Attempted to move a piece to a full position.");
         }
 
         if (oppositeColorsAtIndices(startIndex, targetIndex)) {
@@ -106,11 +109,13 @@ public class State {
                         "INVALID CAPTURE ATTEMPT: Attempting to move a piece to an opponent's "
                                 + "position with more than one piece on it.");
             }
+            // Perform the capture
+            _positions.capture(targetIndex);
+        } else {
+            // Perform the move
+            _positions.decrement(startIndex);
+            _positions.increment(targetIndex);
         }
-
-        // FIXME: What happens if a piece is captured?
-        _positions.decrement(startIndex);
-        _positions.increment(targetIndex);
     }
 
 
@@ -203,9 +208,10 @@ public class State {
         this._white = !this._white;
     }
 
-    /** Roll my dice. */
+    /** Roll my dice and update the available rolls. */
     public void roll() {
         _dice.roll();
+        determineAvailableRolls();
     }
 
     /** Check if the score of my dice is a Pasch. That is, equal outcomes on both dice. */
@@ -223,10 +229,25 @@ public class State {
         return _dice.second();
     }
 
-    /** Return the Dice associated with my board. */
-    // TODO: Should try to avoid returning the Dice object directly.
-    public Dice getDice() {
-        return _dice;
+    /**
+     * Set the available rolls based on the value of the rolled dice. In the case of a Pasch,
+     * this stores the rolled values twice, as a player may make up to four moves. This method
+     * should only run once per turn (after the dice are rolled).
+     */
+    // TODO: Rename to "determine..."
+    private void determineAvailableRolls() {
+        _availableRolls.clear();
+        _availableRolls.add(first());
+        _availableRolls.add(second());
+        if (pasch()) {
+            _availableRolls.add(first());
+            _availableRolls.add(second());
+        }
+    }
+
+    /** Getter for my available rolls. */
+    Set<Integer> getAvailableRolls() {
+        return new HashSet<>(_availableRolls); // TODO: Ensure this isn't slow in the future.
     }
 
     /** Returns true iff the active player has no pieces behind the position INDEX. **/
@@ -281,10 +302,10 @@ public class State {
         return white() ? index == Positions.BOARD_SIZE : index == -1;
     }
 
-    /** Takes a single roll (1-6) and determines legal moves based on that roll. */
-    public Set<Move> legalMovesFromRoll(int roll) {
-        Set<Move> validMoves = new HashSet<>(); // TODO: Could maybe make this an instance
-        // variable.
+    /** Takes a single roll (1-6) and determines legal moves based on that roll. These moves,
+     * and their corresponding rolls, are then stored in two seperate lists as a properties of the
+     * state. */
+    private void updateLegalMovesFromRoll(int roll) {
         roll = white() ? roll : -roll; // This allows black rolls to be counted as negative.
         if (activePlayerHasBeenCaptured()) {
             /* Only permit moves that free the captured piece(s). */
@@ -293,9 +314,9 @@ public class State {
                 // TODO: Could consider checking here if the move is a capture and if so add that
                 //  information as a property of the Move instance. Maybe, it's simpler to just
                 //  do this when the actual move is played out...
-                validMoves.add(Move.fromCaptured(white(), targetIndex));
+                _legalMoves.add(Move.fromCaptured(white(), targetIndex));
+                _legalMoveCorrespondingRolls.add(white() ? roll : -roll);
             }
-            return validMoves;
         }
         for (int startIndex : activePlayerBoardPositions()) {
             int targetIndex = startIndex + roll;
@@ -312,27 +333,49 @@ public class State {
                 // to the end zone OR the position 5 piece can be moved to position 1.
                 if (allPiecesInEndZone()) {
                     if (perfectEscape(targetIndex) || isLastPieceOnBoard(startIndex)) {
-                        validMoves.add(Move.escape(white(), startIndex));
+                        _legalMoves.add(Move.escape(white(), startIndex));
+                        _legalMoveCorrespondingRolls.add(white() ? roll : -roll);
                     }
                 }
             } else {
                 if (positionCanBeMovedToBy(targetIndex, white())) {
-                    validMoves.add(Move.move(startIndex, targetIndex));
+                    _legalMoves.add(Move.move(startIndex, targetIndex));
+                    _legalMoveCorrespondingRolls.add(white() ? roll : -roll);
                 }
             }
         }
-        return validMoves;
     }
 
-    /** Return an array of all legal moves which can be made by using either roll first. */
-    public Map<Integer, Set<Move>> legalMoves() {
-        Map<Integer, Set<Move>> moves= new HashMap<>();
-        Set<Move> movesFromFirstRoll = legalMovesFromRoll(first());
-        if (!pasch()) {
+    /** Update the all possible legal moves, and their corresponding dice rolls. This should be run
+     * only once per turn, after the dice have been rolled.
+     */
+    private void updateLegalMoves() {
+        _legalMoves.clear();
+        _legalMoveCorrespondingRolls.clear();
 
+        updateLegalMovesFromRoll(first());
+        if (!pasch()) {
+            updateLegalMovesFromRoll(second());
         }
-        moves.addAll(legalMovesFromRoll(second()));
-        return moves;
+    }
+
+    // TODO: We should store the legal moves in a Map<Move, Integer> in the state and provide a
+    //  method to a... actually I don't know. We need a way for the Game class to get access to
+    //  all legal moves. BUT then, when a move is played, we need to know what roll it was
+    //  associated with, in order to remove that from the availableRolls set.
+
+    // TODO: If we are not storing legal moves in a set, we run into the situation, where the
+    //  same move is listed twice, but corresponding to different dice rolls.
+    /** Return list of all legal moves. This list should NOT be modified directly by the caller! */
+    public List<Move> getLegalMoves() {
+        return _legalMoves;
+    }
+
+    /** Return a list of the rolls that correspond to each move in getLegalMoves(). This list
+     * should NOT be modified directly by the caller!
+     */
+    public List<Integer> getLegalMoveCorrespondingRolls() {
+        return _legalMoveCorrespondingRolls;
     }
 
     /** Returns true iff the active player has won the game. */
@@ -346,6 +389,19 @@ public class State {
     /** A pair of dice associated with this board. */
     private final Dice _dice;
 
+    /**
+     * A set of available rolls. That is rolls that have not yet been used to make a move in a
+     * given turn. If a Pasch is rolled (say two 3s), then this will store four 3s, as active player
+     * can make up to four moves, using each of the four 3s one time.
+     */
+    private Set<Integer> _availableRolls;
+
     /** The Positions object associated with this board. */
     private final Positions _positions;
+
+    /** A list of all legal moves that can be made based on the current state. */
+    private List<Move> _legalMoves;
+
+    /** A list of the rolls corresponding to each legal move in _legalMoves. */
+    private List<Integer> _legalMoveCorrespondingRolls;
 }
