@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -16,17 +17,13 @@ public class Game {
         _state.roll(); // TODO: Dice should not be rerolled on the first turn.
 
         Set<Integer> availableRolls = _state.getAvailableRolls();
-        List<Move> legalMoves = _state.getLegalMoves();
-        // TODO: Could consider making the roll part of the Move object, however, this would
-        //  involve storing six times the moves in the move class. But since these moves are
-        //  computed before running any kind of AI, this should not be terrible...
-        List<Integer> legalMovesCorrespondingRolls = _state.getLegalMoveCorrespondingRolls();
+        Set<Move> legalMoves = _state.getLegalMoves();
 
         while (!availableRolls.isEmpty() && !legalMoves.isEmpty()) {
             print();
             // FIXME: this is just temporary - makes a random move
             // TODO: Use an interface for selecting moves
-            Move move = Utils.selectRandom(legalMoves);
+            Move move = Utils.selectRandom(new ArrayList<>(legalMoves));
             System.out.println(move);
             makeMove(move); // TODO: the makeMove method should remove the applied roll from
             // _available rolls in the State class.

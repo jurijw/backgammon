@@ -10,8 +10,7 @@ public class State {
         _dice = new Dice();
         _positions = new Positions();
         _availableRolls = new HashSet<>();
-        _legalMoves = new ArrayList<>();
-        _legalMoveCorrespondingRolls = new ArrayList<>();
+        _legalMoves = new HashSet<>();
     }
 
     // TODO: Consider abstracting away into a View class.
@@ -295,31 +294,24 @@ public class State {
      * all pieces of one color are in the end zone, any roll that would take a piece exactly one
      * position of the board is permitted, even if that piece is not the last piece. For example,
      * if there are black pieces at positions.
-     * @param index
-     * @return
+     * @param targetIndex The target index to be checked.
+     * @return True iff the index constitutes a "perfect escape" for the active player.
      */
-    private boolean perfectEscape(int index) {
-        return white() ? index == Positions.BOARD_SIZE : index == -1;
+    private boolean perfectEscape(int targetIndex) {
+        return white() ? targetIndex == Positions.BOARD_SIZE : targetIndex == -1;
     }
 
-    /** Takes a single roll (1-6) and determines legal moves based on that roll. These moves,
-     * and their corresponding rolls, are then stored in two seperate lists as a properties of the
-     * state. */
+    /** Takes a single roll (1-6) and determines legal moves based on that roll. */
     private void updateLegalMovesFromRoll(int roll) {
-        roll = white() ? roll : -roll; // This allows black rolls to be counted as negative.
         if (activePlayerHasBeenCaptured()) {
             /* Only permit moves that free the captured piece(s). */
-            int targetIndex = white() ? roll - 1 : Positions.BOARD_SIZE + roll;
+            int targetIndex = white() ? roll - 1 : Positions.BOARD_SIZE - roll;
             if (positionCanBeMovedToByActivePlayer(targetIndex)) {
-                // TODO: Could consider checking here if the move is a capture and if so add that
-                //  information as a property of the Move instance. Maybe, it's simpler to just
-                //  do this when the actual move is played out...
-                _legalMoves.add(Move.fromCaptured(white(), targetIndex));
-                _legalMoveCorrespondingRolls.add(white() ? roll : -roll);
+                _legalMoves.add(Move.fromCaptured(white(), targetIndex, roll));
             }
         }
         for (int startIndex : activePlayerBoardPositions()) {
-            int targetIndex = startIndex + roll;
+            int targetIndex = white() ? startIndex + roll : startIndex - roll;
             // Check if the target index takes a piece off the board.
             if (!Positions.validBoardIndex(targetIndex)) {
                 // Allow if all pieces in end zone AND it is a perfect escape or last piece on
@@ -333,25 +325,22 @@ public class State {
                 // to the end zone OR the position 5 piece can be moved to position 1.
                 if (allPiecesInEndZone()) {
                     if (perfectEscape(targetIndex) || isLastPieceOnBoard(startIndex)) {
-                        _legalMoves.add(Move.escape(white(), startIndex));
-                        _legalMoveCorrespondingRolls.add(white() ? roll : -roll);
+                        _legalMoves.add(Move.escape(white(), startIndex, roll));
                     }
                 }
             } else {
                 if (positionCanBeMovedToBy(targetIndex, white())) {
-                    _legalMoves.add(Move.move(startIndex, targetIndex));
-                    _legalMoveCorrespondingRolls.add(white() ? roll : -roll);
+                    _legalMoves.add(Move.move(startIndex, targetIndex, roll));
                 }
             }
         }
     }
 
     /** Update the all possible legal moves, and their corresponding dice rolls. This should be run
-     * only once per turn, after the dice have been rolled.
+     *  after every move is played.
      */
     private void updateLegalMoves() {
         _legalMoves.clear();
-        _legalMoveCorrespondingRolls.clear();
 
         updateLegalMovesFromRoll(first());
         if (!pasch()) {
@@ -359,23 +348,10 @@ public class State {
         }
     }
 
-    // TODO: We should store the legal moves in a Map<Move, Integer> in the state and provide a
-    //  method to a... actually I don't know. We need a way for the Game class to get access to
-    //  all legal moves. BUT then, when a move is played, we need to know what roll it was
-    //  associated with, in order to remove that from the availableRolls set.
-
-    // TODO: If we are not storing legal moves in a set, we run into the situation, where the
-    //  same move is listed twice, but corresponding to different dice rolls.
-    /** Return list of all legal moves. This list should NOT be modified directly by the caller! */
-    public List<Move> getLegalMoves() {
+    /** Return the set of all legal moves. This list should NOT be modified directly by the
+     * caller! */
+    public Set<Move> getLegalMoves() {
         return _legalMoves;
-    }
-
-    /** Return a list of the rolls that correspond to each move in getLegalMoves(). This list
-     * should NOT be modified directly by the caller!
-     */
-    public List<Integer> getLegalMoveCorrespondingRolls() {
-        return _legalMoveCorrespondingRolls;
     }
 
     /** Returns true iff the active player has won the game. */
@@ -400,8 +376,5 @@ public class State {
     private final Positions _positions;
 
     /** A list of all legal moves that can be made based on the current state. */
-    private List<Move> _legalMoves;
-
-    /** A list of the rolls corresponding to each legal move in _legalMoves. */
-    private List<Integer> _legalMoveCorrespondingRolls;
+    private Set<Move> _legalMoves;
 }
