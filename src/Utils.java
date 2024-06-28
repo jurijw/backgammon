@@ -1,4 +1,4 @@
-import java.util.ArrayList;
+import java.util.List;
 
 public class Utils {
 
@@ -42,9 +42,9 @@ public class Utils {
         return randomInteger(low, high + 1);
     }
 
-    static <T> T selectRandomFromArray(ArrayList<T> arr) {
-        int index = randomInteger(arr.size());
-        return arr.get(index);
+    static <T> T selectRandom(List<T> list) {
+        int index = randomInteger(list.size());
+        return list.get(index);
     }
 
     /** The number of characters that each column in the printed board occupies. */
