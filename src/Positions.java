@@ -190,25 +190,33 @@ public class Positions {
         return numCaptured(white) > 0;
     }
 
+    /** Returns an integer array containing the indices of all positions occupied by the player specified by WHITE in
+     * the range STARTINDEX (inclusive) to ENDINDEX (exclusive) in the _positions array. Indices must represent a
+     * valid range.
+     */
+    private ArrayList<Integer> occupiedPositionsInRange(boolean white, int startIndex, int endIndex) {
+        checkValidIndex(startIndex, endIndex);
+        ArrayList<Integer> occupiedPositionsArray = new ArrayList<>();
+        for (int i = startIndex; i < endIndex; i++) {
+            int numPiecesAtPos = get(i);
+            if ((numPiecesAtPos > 0 && white) || (numPiecesAtPos < 0 && !white)) {
+                occupiedPositionsArray.add(i);
+            }
+        }
+        return occupiedPositionsArray;
+    }
     /**
      * Returns an integer array containing the indices of all the positions occupied by white if WHITE is
      * true, else all black occupied positions.
      */
     private ArrayList<Integer> occupiedPositions(boolean white) {
-        ArrayList<Integer> occupiedPositions = new ArrayList<>();
-        for (int i = 0; i < SIZE; i++) {
-            int numPiecesAtPos = get(i);
-            if ((numPiecesAtPos > 0 && white) || (numPiecesAtPos < 0 && !white)) {
-                occupiedPositions.add(i);
-            }
-        }
-        return occupiedPositions;
+        return occupiedPositionsInRange(white, 0, SIZE);
     }
 
     /** Return an integer array containing the indices of all the positions ON THE BOARD occupied by the player
      * specified by WHITE. */
     public ArrayList<Integer> occupiedBoardPositions(boolean white) {
-        return (ArrayList<Integer>) occupiedPositions(white).subList(0, BOARD_SIZE);
+        return occupiedPositionsInRange(white, 0, BOARD_SIZE);
     }
 
     /** Return true if an INDEX (which must be valid) is in the end zone of the player specified by WHITE. */
