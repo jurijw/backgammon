@@ -351,6 +351,19 @@ public class Positions {
         return numEscaped(white) == NUM_PIECES_PER_SIDE;
     }
 
+    /** Capture the piece at position INDEX. This means incrementing the number of captured
+     * pieces for the color that initially occupies the index and then switching the color of the
+     * single piece that occupies the position. */
+    public void capture(int index) {
+        checkValidBoardIndex("Can only capture pieces on the board.");
+        if (!single(index)) {
+            throwInvalidPositionIndexError("There must be exactly one piece in a position to "
+                                                   + "apply a capture");
+        }
+        _positions[getCaptureIndex(whiteAt(index))] += 1;
+        set(index, -get(index));
+    }
+
     /**
      * Stores the number of white or black pieces at a given board location (indexed from 0-23).
      * Positive numbers indicate white pieces occupy the position, and negative indicate black
