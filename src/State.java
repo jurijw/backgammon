@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 
+/** This class handles all things related to the STATE of a game. But also provides methods to calculate valid moves. */
 public class Board {
 
     Board() {
