@@ -1,21 +1,22 @@
-import java.util.ArrayList;
+import java.util.Set;
 
+/**
+ * This class handles everything related to the FLOW of the game. When to switch turns, when the
+ * game is over, etc.
+ */
 public class Game {
-    /**
-     * The number of positions that the board has.
-     */
-    private final int BOARD_SIZE = Positions.BOARD_SIZE;
 
     Game() {
-        _board = new Board();
-        _board.setTurn(doesWhiteStart());
+        _state = new State();
+        _state.setTurn(doesWhiteStart());
     }
 
     public void turn() {
-        _board.roll();
-        int numRollsRemaining = _board.pasch() ? 4 : 2;
+        _state.roll();
+        int numRollsRemaining = _state.pasch() ? 4 : 2;
 
-        ArrayList<Move> legalMoves = _board.legalMoves(); // TODO: consider storing this array to avoid recomputing.
+        Set<Move> legalMoves
+                = _state.legalMoves(); // TODO: consider storing this array to avoid recomputing.
         while (numRollsRemaining > 0 && !legalMoves.isEmpty()) {
             print();
             // FIXME: this is just temporary - makes a random move
@@ -33,34 +34,34 @@ public class Game {
      * Determine which side starts the game.
      */
     private boolean doesWhiteStart() {
-        if (_board.first() > _board.second()) {
+        if (_state.first() > _state.second()) {
             return true;
-        } else if (_board.first() < _board.second()) {
+        } else if (_state.first() < _state.second()) {
             return false;
         } else {
             /* If the dice are equal, re-roll until distinct. */
-            _board.roll();
+            _state.roll();
             return doesWhiteStart();
         }
     }
 
     public void makeMove(Move move) {
-        _board.makeMove(move);
+        _state.makeMove(move);
     }
 
     public void printBoard() {
-        _board.printBoard();
+        _state.printBoard();
     }
 
     public void print() {
-        String side = _board.white() ? "WHITE" : "BLACK";
+        String side = _state.white() ? "WHITE" : "BLACK";
         System.out.println("TURN: " + side);
 
-        System.out.println(_board.getDice());
+        System.out.println(_state.getDice());
         printBoard();
-        System.out.println(_board.legalMoves());
+        System.out.println(_state.legalMoves());
     }
 
 
-    private final Board _board;
+    private final State _state;
 }
