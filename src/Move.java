@@ -9,6 +9,15 @@ public class Move {
         this._startIndex = startIndex;
         this._targetIndex = targetIndex;
         this._roll = roll;
+        this._isPass = false;
+    }
+
+    /** A move representing a pass. This move is to be played when no legal moves are available. */
+    private Move() {
+        this._startIndex = 0;
+        this._targetIndex = 0;
+        this._roll = 0;
+        this._isPass = true;
     }
 
     /**
@@ -23,7 +32,7 @@ public class Move {
         // FIXME: Check indices are valid. Also remember that the _MOVES array contains moves
         //  moving from a position
         //  to itself, as well as moves from the captured indices to end zones, etc.
-        return MOVES[startIndex][endIndex][roll];
+        return MOVES[startIndex][endIndex][roll - 1];
     }
 
     /**
@@ -61,7 +70,10 @@ public class Move {
     }
 
     /** Getter for the roll associated with my move. */
-    public int roll() {return _roll;}
+    public int roll() { return _roll; }
+
+    /** Returns true iff this move is a passing move. */
+    public boolean isPass() { return _isPass; }
 
     /** Returns a readable string representing the move. */
     public String toString() {
@@ -75,6 +87,10 @@ public class Move {
     private final int _targetIndex;
     /** The roll associated with making my move. */
     private final int _roll;
+    /** True iff the move is a passing move. */
+    private final boolean _isPass;
+    /** A move representing a pass. To be used when no legal moves are available. */
+    static final Move PASS = new Move();
 
     /** A nested array storing all possible moves. */
     private static final Move[][][] MOVES
@@ -83,7 +99,7 @@ public class Move {
     static {
         for (int startIndex = 0; startIndex < Positions.SIZE; startIndex++) {
             for (int targetIndex = 0; targetIndex < Positions.SIZE; targetIndex++) {
-                for (int roll = 1; roll <= Dice.NUM_SIDES; roll++) {
+                for (int roll = 0; roll < Dice.NUM_SIDES; roll++) {
                     if (startIndex != targetIndex) {
                         MOVES[startIndex][targetIndex][roll] = new Move(startIndex,
                                                                         targetIndex,

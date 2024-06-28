@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -11,25 +10,34 @@ public class Game {
     Game() {
         _state = new State();
         _state.setTurn(doesWhiteStart());
+        _movePickerWhite = new AI.RandomChoice();
+        _movePickerBlack = new AI.RandomChoice();
+    }
+
+    public void play() {
+        while (!gameOver()) {
+            turn();
+        }
     }
 
     public void turn() {
         _state.roll(); // TODO: Dice should not be rerolled on the first turn.
-
-        Set<Integer> availableRolls = _state.getAvailableRolls();
-        Set<Move> legalMoves = _state.getLegalMoves();
-
-        while (!availableRolls.isEmpty() && !legalMoves.isEmpty()) {
-            print();
-            // FIXME: this is just temporary - makes a random move
-            // TODO: Use an interface for selecting moves
-            Move move = Utils.selectRandom(new ArrayList<>(legalMoves));
+        while (!availableRolls().isEmpty() && !legalMoves().isEmpty()) {
+            print(); // TODO: Should start using some form of notifier system.
+            Move move = selectMove(legalMoves());
             System.out.println(move);
             makeMove(move); // TODO: the makeMove method should remove the applied roll from
-            // _available rolls in the State class.
+            // _available rolls in the State class. But also think about moving the makeMove
+            // method here.
+        }
+    }
 
-
-
+    /** Returns a move selected from the move picker associated with the active player. */
+    private Move selectMove(Set<Move> moves) {
+        if (_state.white()) {
+            return _movePickerWhite.selectMove(moves);
+        } else {
+            return _movePickerBlack.selectMove(moves);
         }
     }
 
@@ -52,8 +60,21 @@ public class Game {
         _state.makeMove(move);
     }
 
-    public void printBoard() {
-        _state.printBoard();
+    /** Returns the set of legal moves according to the state of the game. */
+    private Set<Move> legalMoves() {
+        return _state.getLegalMoves();
+    }
+
+    /** Returns a list of available dice rolls. That is, rolls that can still be used to make a
+     * move. In the case of a Pasch, say two fours, this would initially contain four fours at
+     * the start of a turn. */
+    private List<Integer> availableRolls() {
+        return _state.getAvailableRolls();
+    }
+
+    /** Returns true iff the game is over. */
+    public boolean gameOver() {
+        return _state.gameOver();
     }
 
     public void print() {
@@ -66,6 +87,10 @@ public class Game {
         // System.out.println(_state.legalMoves());
     }
 
-
+    /** The move picker associated with the white player for this game. */
+    private final MovePicker _movePickerWhite;
+    /** The move picker associated with the black player for this game. */
+    private final MovePicker _movePickerBlack;
+    /** The state of this game. */
     private final State _state;
 }
