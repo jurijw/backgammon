@@ -77,7 +77,7 @@ public class Move {
 
     /** Returns a readable string representing the move. */
     public String toString() {
-        return "Move: " + start() + "->" + target() + "(" + roll() + ")";
+        return "Move: " + start() + "->" + target() + " (" + roll() + ")";
     }
 
 
@@ -99,9 +99,9 @@ public class Move {
     static {
         for (int startIndex = 0; startIndex < Positions.SIZE; startIndex++) {
             for (int targetIndex = 0; targetIndex < Positions.SIZE; targetIndex++) {
-                for (int roll = 0; roll < Dice.NUM_SIDES; roll++) {
+                for (int roll = 1; roll <= Dice.NUM_SIDES; roll++) {
                     if (startIndex != targetIndex) {
-                        MOVES[startIndex][targetIndex][roll] = new Move(startIndex,
+                        MOVES[startIndex][targetIndex][roll - 1] = new Move(startIndex,
                                                                         targetIndex,
                                                                         roll);
                     }

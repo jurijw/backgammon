@@ -1,4 +1,7 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This class handles all things related to the STATE of a game. But also provides methods to
@@ -9,7 +12,7 @@ public class State {
     State() {
         _dice = new Dice();
         _positions = new Positions();
-        _availableRolls = new HashSet<>();
+        _availableRolls = new ArrayList<>();
         _legalMoves = new HashSet<>();
     }
 
@@ -80,40 +83,41 @@ public class State {
         System.out.println();
     }
 
-    /** Applies the given MOVE to the BOARD, provided that the MOVE is valid. */
+    // TODO: Should this go into the Game class?
+    /** Applies the given MOVE to the BOARD, provided that the MOVE is valid. Also updates the
+     * legal moves set accordingly. */
     public void makeMove(Move move) {
-        int startIndex = move.start();
-        int targetIndex = move.target();
-
-        if (_positions.empty(startIndex)) {
-            throw new BackgammonError(
-                    "INVALID MOVE ATTEMPT: Attempted to move a piece from a position with no "
-                            + "pieces.");
+        if (!_legalMoves.contains(move)) {
+            throw new BackgammonError("INVALID MOVE ATTEMPT: Attempting to make a non-legal move.");
         }
-        if (!occupiedByActivePlayer(startIndex)) {
-            throw new BackgammonError(
-                    "INVALID MOVE ATTEMPT: Attempted to move a piece that does not belong to the"
-                            + " active player.");
+        if (gameOver()) {
+            throw new BackgammonError("INVALID MOVE ATTEMPT: The game is over.");
         }
-        if (_positions.full(targetIndex)) {
-            throw new BackgammonError(
-                    "INVALID MOVE ATTEMPT: Attempted to move a piece to a full position.");
-        }
-
-        if (oppositeColorsAtIndices(startIndex, targetIndex)) {
-            // This kind of move is only valid if it is a capturing move. I.e, the target
-            // position only has one piece on it. */
-            if (!_positions.single(targetIndex)) {
-                throw new BackgammonError(
-                        "INVALID CAPTURE ATTEMPT: Attempting to move a piece to an opponent's "
-                                + "position with more than one piece on it.");
-            }
-            // Perform the capture
-            _positions.capture(targetIndex);
+        if (move.isPass()) {
+            switchTurn();
         } else {
-            // Perform the move
-            _positions.decrement(startIndex);
-            _positions.increment(targetIndex);
+            int startIndex = move.start();
+            int targetIndex = move.target();
+            if (oppositeColorsAtIndices(startIndex, targetIndex)) {
+                /* Move is a capture. */
+                // Perform the capture
+                _positions.capture(targetIndex);
+            } else {
+                // Perform the move
+                _positions.decrement(startIndex);
+                _positions.increment(targetIndex, white());
+            }
+            _availableRolls.remove((Integer) move.roll());
+            /* If after performing the move / capture, no more rolls are available, switch the
+            turn. */
+            if (_availableRolls.isEmpty()) {
+                switchTurn();
+            }
+        }
+        // Update the new legal moves, unless the game is over, or the turn is over (no more
+        // available rolls)
+        if (!gameOver() && !_availableRolls.isEmpty()) {
+            updateLegalMoves();
         }
     }
 
@@ -122,7 +126,7 @@ public class State {
      * Returns true iff the pieces at INDEX1 and INDEX2 are of opposite color. Indices should refer
      * positions ON THE BOARD.
      */
-    public boolean oppositeColorsAtIndices(int index1, int index2) {
+    private boolean oppositeColorsAtIndices(int index1, int index2) {
         _positions.checkValidBoardIndex(index1, index2);
         return (_positions.get(index1) ^ _positions.get(index2)) < 0;
     }
@@ -132,7 +136,7 @@ public class State {
      * Get the number of pieces at the board position INDEX. Negative numbers indicate black
      * pieces.
      */
-    public int getNumberPiecesAt(int index) {
+    public int get(int index) {
         return _positions.get(index);
     }
 
@@ -207,10 +211,11 @@ public class State {
         this._white = !this._white;
     }
 
-    /** Roll my dice and update the available rolls. */
+    /** Roll my dice, update the available rolls and legal moves. */
     public void roll() {
         _dice.roll();
         determineAvailableRolls();
+        updateLegalMoves();
     }
 
     /** Check if the score of my dice is a Pasch. That is, equal outcomes on both dice. */
@@ -233,7 +238,6 @@ public class State {
      * this stores the rolled values twice, as a player may make up to four moves. This method
      * should only run once per turn (after the dice are rolled).
      */
-    // TODO: Rename to "determine..."
     private void determineAvailableRolls() {
         _availableRolls.clear();
         _availableRolls.add(first());
@@ -245,8 +249,8 @@ public class State {
     }
 
     /** Getter for my available rolls. */
-    Set<Integer> getAvailableRolls() {
-        return new HashSet<>(_availableRolls); // TODO: Ensure this isn't slow in the future.
+    List<Integer> getAvailableRolls() {
+        return _availableRolls;
     }
 
     /** Returns true iff the active player has no pieces behind the position INDEX. **/
@@ -356,25 +360,39 @@ public class State {
 
     /** Returns true iff the active player has won the game. */
     public boolean gameOver() {
-        return _positions.allEscaped(white());
+        return _gameOver;
     }
 
+    public void updateGameOver() {
+        _positions.allEscaped(white());
+    }
+
+    public void print() {
+        String side = white() ? "WHITE" : "BLACK";
+        System.out.println("TURN: " + side);
+        System.out.println(_dice);
+        printBoard();
+        System.out.println(_legalMoves);
+    }
     /** True iff it is white's turn to play on this board. */
     private boolean _white;
 
+    /** True iff the game is over */
+    private boolean _gameOver;
+
     /** A pair of dice associated with this board. */
     private final Dice _dice;
+
+    /** The Positions object associated with this board. */
+    private final Positions _positions;
+
+    /** A list of all legal moves that can be made based on the current state. */
+    private final Set<Move> _legalMoves;
 
     /**
      * A set of available rolls. That is rolls that have not yet been used to make a move in a
      * given turn. If a Pasch is rolled (say two 3s), then this will store four 3s, as active player
      * can make up to four moves, using each of the four 3s one time.
      */
-    private Set<Integer> _availableRolls;
-
-    /** The Positions object associated with this board. */
-    private final Positions _positions;
-
-    /** A list of all legal moves that can be made based on the current state. */
-    private Set<Move> _legalMoves;
+    private final List<Integer> _availableRolls;
 }

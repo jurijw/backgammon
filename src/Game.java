@@ -15,21 +15,24 @@ public class Game {
     }
 
     public void play() {
+        System.out.println("Starting game.");
+        _state.print();
         while (!gameOver()) {
             turn();
+            _state.print();
         }
+        System.out.println("Game over.");
     }
 
     public void turn() {
         _state.roll(); // TODO: Dice should not be rerolled on the first turn.
         while (!availableRolls().isEmpty() && !legalMoves().isEmpty()) {
-            print(); // TODO: Should start using some form of notifier system.
             Move move = selectMove(legalMoves());
-            System.out.println(move);
-            makeMove(move); // TODO: the makeMove method should remove the applied roll from
-            // _available rolls in the State class. But also think about moving the makeMove
-            // method here.
+            System.out.println("Playing move: " + move);
+            makeMove(move);
+            _state.print();
         }
+        // TODO: Are draws possible? I don't think so. If so, must check for two consecutive passes.
     }
 
     /** Returns a move selected from the move picker associated with the active player. */
@@ -83,14 +86,14 @@ public class Game {
 
         // TODO: This should all be handles in the State class.
         // System.out.println(_state.getDice());
-        // printBoard();
+        _state.printBoard();
         // System.out.println(_state.legalMoves());
     }
 
     /** The move picker associated with the white player for this game. */
-    private final MovePicker _movePickerWhite;
+    private final MovePickerInterface _movePickerWhite;
     /** The move picker associated with the black player for this game. */
-    private final MovePicker _movePickerBlack;
+    private final MovePickerInterface _movePickerBlack;
     /** The state of this game. */
     private final State _state;
 }

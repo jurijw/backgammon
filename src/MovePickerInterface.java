@@ -1,6 +1,6 @@
 import java.util.Set;
 
-public interface MovePicker {
+public interface MovePickerInterface {
     /**
      * Given a set of moves, return one of those moves, by any kind of logic.
      *

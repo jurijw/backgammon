@@ -186,8 +186,8 @@ public class Positions {
         return !empty(index);
     }
 
-    // TODO: This should really only be called on board indices.
-
+    // TODO: This should really only be called on board indices. But consider that the allEscaped
+    //  method may rely on this.
     /**
      * Returns true iff the position at INDEX is fully occupied.
      */
@@ -278,15 +278,12 @@ public class Positions {
     /**
      * Increments the number of pieces at a given INDEX, maintaining the color of the pieces at that
      * index. For example, if _positions[4] = -3 (three black pieces at position 4), then
-     * increment(4) results in _positions[4] -> -4. Can only be called on non-empty positions. //
-     * TODO: Consider adding ability to call for end zone / esc.
+     * increment(4) results in _positions[4] -> -4.
      */
-    public void increment(int index) {
+    public void increment(int index, boolean white) {
         checkValidBoardIndex("Attempting to call increment() on a non-board index.");
-        ensureOccupied(index, "This method cannot be applied to an empty position.");
-        int delta = (get(index) >> (Integer.SIZE - 1) | 1);
-        int newNumPieces = get(index) + delta;
-        set(index, newNumPieces);
+        int delta = white ? 1 : -1;
+        set(index, get(index) + delta);
     }
 
     /**
