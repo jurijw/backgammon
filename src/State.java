@@ -7,10 +7,30 @@ import java.util.Set;
  * This class handles all things related to the STATE of a game. But also provides methods to
  * calculate valid moves.
  */
+// TODO: Make serializable. Could write latest game state to file for debugging. Then, if
+//  something happens, we can read the latest game state and replay the last move. Then again, we
+//  could maybe achieve a similar result simply by dropping a call frame in the debugger.
+
+// TODO: Check for game over and also make sure passing moves are returned in legal moves if
+//  no move is available.
 public class State {
 
     State() {
         _dice = new Dice();
+        _positions = new Positions();
+        _availableRolls = new ArrayList<>();
+        _legalMoves = new HashSet<>();
+        _gameOver = false;
+        _whiteWon = false; // TODO: Use an enum for the two sides.
+        // TODO: Do I need to determine whose turn it is here? If I leave it uninitialized, black
+        //  will always start since booleans by default are set to false.
+    }
+
+    /** Create a default state instance where the initial player is specified by WHITE, and the
+     * initial rolls are specified by FIRST and SECOND.
+     */
+    State(boolean white, int first, int second) {
+        _dice = new Dice(first, second);
         _positions = new Positions();
         _availableRolls = new ArrayList<>();
         _legalMoves = new HashSet<>();
@@ -83,7 +103,6 @@ public class State {
         System.out.println();
     }
 
-    // TODO: Should this go into the Game class?
     /** Applies the given MOVE to the BOARD, provided that the MOVE is valid. Also updates the
      * legal moves set accordingly. */
     public void makeMove(Move move) {
@@ -110,24 +129,44 @@ public class State {
             _availableRolls.remove((Integer) move.roll());
             /* If after performing the move / capture, no more rolls are available, switch the
             turn. */
-            if (_availableRolls.isEmpty()) {
-                switchTurn();
-            }
+//            if (_availableRolls.isEmpty()) {
+//                switchTurn();
+//            }
+            // Moved this functionality into the Game.turn() method.
         }
+        // Check for gameOver()
+        updateGameOver();
         // Update the new legal moves, unless the game is over, or the turn is over (no more
         // available rolls)
         if (!gameOver() && !_availableRolls.isEmpty()) {
             updateLegalMoves();
         }
+        if (_positions.numPieces(white()) != Positions.NUM_PIECES_PER_SIDE) {
+            _positions.print();
+            throw new BackgammonError("INVARIANT VIOLATED: Number of total pieces for either side"
+                                              + " should remain constant when including captured "
+                                              + "and escaped pieces.");
+            // TODO: This is slow. Don't use in production.
+        }
     }
 
 
     /**
-     * Returns true iff the pieces at INDEX1 and INDEX2 are of opposite color. Indices should refer
-     * positions ON THE BOARD.
+     * Returns true iff the pieces at INDEX1 and INDEX2 are of opposite color.
      */
+    // FIXME: Ensure this works.
+    // TODO: Move this back into positions class.
     private boolean oppositeColorsAtIndices(int index1, int index2) {
-        _positions.checkValidBoardIndex(index1, index2);
+        Positions.checkValidIndex(index1, index2);
+        int numAtPos1 = _positions.get(index1);
+        int numAtPos2 = _positions.get(index2);
+        // If indices refer to black capture / escape indices, flip the value
+        if (index1 == Positions.getEscapeIndex(false) || index1 == Positions.getCaptureIndex(false)) {
+            numAtPos1 = -numAtPos1;
+        }
+        if (index2 == Positions.getEscapeIndex(false) || index2 == Positions.getCaptureIndex(false)) {
+            numAtPos2 = -numAtPos2;
+        }
         return (_positions.get(index1) ^ _positions.get(index2)) < 0;
     }
 
@@ -149,6 +188,7 @@ public class State {
      * Return the number of white pieces remaining on the board if WHITE, else number of black
      * pieces.
      */
+    // TODO: Move to Positions class. Ensure no duplicate method exists.
     public int numPiecesRemainingOnBoard(boolean white) {
         int count = 0;
         for (int position : _positions.occupiedBoardPositions(white)) {
@@ -238,7 +278,7 @@ public class State {
      * this stores the rolled values twice, as a player may make up to four moves. This method
      * should only run once per turn (after the dice are rolled).
      */
-    private void determineAvailableRolls() {
+    void determineAvailableRolls() {
         _availableRolls.clear();
         _availableRolls.add(first());
         _availableRolls.add(second());
@@ -306,6 +346,8 @@ public class State {
     }
 
     // FIXME: Added a move 27 -> 18
+    // FIXME: Appears to not take into account available rolls. So if a roll was 5, 3, and the 3
+    //  is used then the legalRolls still contains rolls using the 3.
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
     private void updateLegalMovesFromRoll(int roll) {
         if (activePlayerHasBeenCaptured()) {
@@ -342,14 +384,13 @@ public class State {
     }
 
     /** Update the all possible legal moves, and their corresponding dice rolls. This should be run
-     *  after every move is played.
+     *  after every roll and after every move is played, so long as there are still available rolls.
      */
     private void updateLegalMoves() {
         _legalMoves.clear();
-
-        updateLegalMovesFromRoll(first());
-        if (!pasch()) {
-            updateLegalMovesFromRoll(second());
+        Set<Integer> uniqueRemainingRolls = new HashSet<>(_availableRolls);
+        for (int roll : uniqueRemainingRolls) {
+            updateLegalMovesFromRoll(roll);
         }
     }
 
@@ -364,22 +405,41 @@ public class State {
         return _gameOver;
     }
 
+    /** Checks if the game is over. If so, updates _gameOver and sets the _whiteWon boolean
+     * accordingly.
+     */
     public void updateGameOver() {
-        _positions.allEscaped(white());
+        if (_positions.allEscaped(white())) {
+            _gameOver = true;
+            _whiteWon = white();
+        }
+    }
+
+    /** This has no meaning unless the game is over. Once the game is over, true iff white has
+     * won. */ // TODO: Replace with enum.
+    public boolean whiteWon() {
+        return _whiteWon;
     }
 
     public void print() {
-        String side = white() ? "WHITE" : "BLACK";
-        System.out.println("TURN: " + side);
-        System.out.println(_dice);
         printBoard();
+        _positions.print();
+        System.out.print("Captured: W: " + _positions.numCaptured(true) + ", B: " + _positions.numCaptured(false));
+        System.out.println(" Escaped: W: " + _positions.numEscaped(true) + ", B: " + _positions.numEscaped(false));
+        String side = white() ? "WHITE" : "BLACK";
+        System.out.println("TURN: " + side + ";  " + _dice + ",  " + _availableRolls);
         System.out.println(_legalMoves);
     }
+
     /** True iff it is white's turn to play on this board. */
     private boolean _white;
 
     /** True iff the game is over */
     private boolean _gameOver;
+
+    /** Only meaningful once the game is over. True if white has won the game, false if black has
+     * won the game. */
+    private boolean _whiteWon;
 
     /** A pair of dice associated with this board. */
     private final Dice _dice;
