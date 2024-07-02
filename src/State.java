@@ -98,9 +98,9 @@ public class State {
         } else {
             int startIndex = move.start();
             int targetIndex = move.target();
-            if (oppositeColorsAtIndices(startIndex, targetIndex)) {
+            if (_positions.occupied(targetIndex) && oppositeColorsAtIndices(startIndex,
+                                                                          targetIndex)) {
                 /* Move is a capture. */
-                // Perform the capture
                 _positions.capture(targetIndex);
             } else {
                 // Perform the move
@@ -305,6 +305,7 @@ public class State {
         return white() ? targetIndex == Positions.BOARD_SIZE : targetIndex == -1;
     }
 
+    // FIXME: Added a move 27 -> 18
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
     private void updateLegalMovesFromRoll(int roll) {
         if (activePlayerHasBeenCaptured()) {

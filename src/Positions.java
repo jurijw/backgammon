@@ -18,11 +18,9 @@ public class Positions {
     public static final int SIZE = BOARD_SIZE + 4;
 
     /** The number of pieces belonging to each side. */
-    private static final int NUM_PIECES_PER_SIDE = 15;
+    protected static final int NUM_PIECES_PER_SIDE = 15;
     /** The maximum number of pieces allowed at any given board position. */
-    private static final int MAX_PIECES_PER_BOARD_POSITION = 5;
-    /** The number of positions that the end zones span. */
-    private static final int END_ZONE_SIZE = 6;
+    protected static final int MAX_PIECES_PER_BOARD_POSITION = 5;
     /** The start index for the black end zone. */
     private static final int END_ZONE_START_INDEX_BLACK = 0;
     /** The end index for the black end zone. */
@@ -46,7 +44,7 @@ public class Positions {
      * white and black pieces.
      */
     private static final int[] DEFAULT_POSITION_SETUP = {
-            2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -2, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -5, 0, 0, 0, 0
+            2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -2, 0, 0, 0, 0
     };
 
     /**
@@ -54,7 +52,7 @@ public class Positions {
      * board.
      */
     public Positions() {
-        this._positions = DEFAULT_POSITION_SETUP;
+        this._positions = DEFAULT_POSITION_SETUP.clone();
     }
 
     public Positions(int[] setup) {
@@ -102,6 +100,10 @@ public class Positions {
         // TODO: Really this should only allow indices ON THE BOARD, as the way captured and
         //  escaped pieces are stored is implementation detail of the Position class.
         checkValidIndex("Attempting to set an invalid position index.", index);
+        if (validBoardIndex(index) && numPieces > MAX_PIECES_PER_BOARD_POSITION) {
+            throw new BackgammonError("Attempting to set the number of pieces at a board index "
+                                              + "above the allowed maximum of " + MAX_PIECES_PER_BOARD_POSITION);
+        }
         _positions[index] = numPieces;
     }
 
@@ -334,13 +336,6 @@ public class Positions {
     }
 
     /**
-     * Returns true iff white occupies the given INDEX, which must be a board index.
-     */
-    public boolean whiteAt(int index) {
-        return occupiedBy(true, index);
-    }
-
-    /**
      * Returns true iff all the pieces of the player designated by WHITE have managed to escape the
      * board.
      */
@@ -357,7 +352,8 @@ public class Positions {
             throwInvalidPositionIndexError("There must be exactly one piece in a position to "
                                                    + "apply a capture");
         }
-        _positions[getCaptureIndex(whiteAt(index))] += 1;
+        boolean isWhiteAtIndex = occupiedBy(true, index);
+        _positions[getCaptureIndex(isWhiteAtIndex)] += 1;
         set(index, -get(index));
     }
 
