@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * This class contains information about the position of pieces on, or off, the Backgammon board.
@@ -30,6 +31,7 @@ public class Positions {
     /** The start index for the black end zone. */
     private static final int END_ZONE_END_INDEX_WHITE = 23;
 
+    // TODO: Consider using an Enum to name all these indices.
     /** The index associated with white's escaped pieces. */
     private static final int WHITE_ESCAPE_INDEX = BOARD_SIZE;
     /** The index associated with black's escaped pieces. */
@@ -44,7 +46,7 @@ public class Positions {
      * white and black pieces.
      */
     private static final int[] DEFAULT_POSITION_SETUP = {
-            2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 0, 5, 0, 3, 0, 0, 0, -2, 0, 0, 0, 0
+            2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, -2, 0, 0, 0, 0
     };
 
     /**
@@ -142,7 +144,7 @@ public class Positions {
     /**
      * Throws an error if the passed INDEX is not valid. Appends MESSAGE to the error message
      */
-    private static void checkValidIndex(String message, int... indices) {
+    static void checkValidIndex(String message, int... indices) {
         if (!validIndex(indices)) {
             throwInvalidPositionIndexError(message);
         }
@@ -152,7 +154,7 @@ public class Positions {
      * Throw an error if the passed INDEX is not valid without providing additional error
      * information.
      */
-    private static void checkValidIndex(int... indices) {
+    static void checkValidIndex(int... indices) {
         checkValidIndex("", indices);
     }
 
@@ -343,6 +345,27 @@ public class Positions {
         return numEscaped(white) == NUM_PIECES_PER_SIDE;
     }
 
+    /** Return the total number of pieces (including captured and escaped pieces) for the side
+     * specified by white. This number should be invariant over the course of a game. */
+    int numPieces(boolean white) {
+        int total = 0;
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            int posCount = get(i);
+            if (white && posCount > 0) {
+                total += posCount;
+            }
+            if (!white && posCount < 0) {
+                total += posCount;
+            }
+        }
+        if (white) {
+            total += numCaptured(true) + numEscaped(true);
+        } else {
+            total += numCaptured(false) + numEscaped(false);
+        }
+        return total;
+    }
+
     /** Capture the piece at position INDEX. This means incrementing the number of captured
      * pieces for the color that initially occupies the index and then switching the color of the
      * single piece that occupies the position. */
@@ -355,6 +378,10 @@ public class Positions {
         boolean isWhiteAtIndex = occupiedBy(true, index);
         _positions[getCaptureIndex(isWhiteAtIndex)] += 1;
         set(index, -get(index));
+    }
+
+    void print() {
+        System.out.println(Arrays.toString(_positions));
     }
 
     /**
