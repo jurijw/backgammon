@@ -47,6 +47,26 @@ public class Utils {
         return list.get(index);
     }
 
+    /** Returns the sum of an integer array. */
+    static int sum(int[] intArray) {
+        int sum;
+        sum = 0;
+        for (int val : intArray) {
+            sum += val;
+        }
+        return sum;
+    }
+
+    /** Returns the sum of an integer list. */
+    static int sum(List<Integer> intList) {
+        int sum;
+        sum = 0;
+        for (int val : intList) {
+            sum += val;
+        }
+        return sum;
+    }
+
     /** The number of characters that each column in the printed board occupies. */
     public static final int BOARDSPACING = 4;
 }
