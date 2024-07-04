@@ -31,9 +31,21 @@ public class State {
      */
     State(boolean white, int first, int second) {
         _dice = new Dice(first, second);
-        _positions = new Positions();
+        _positions = new Positions(); // TODO: Create a method in Positions to set _positions.
+        // Then, _positions here can be made final and we can call the other constructors rather
+        // than repeating code.
         _availableRolls = new ArrayList<>();
         _legalMoves = new HashSet<>();
+    }
+
+    State(boolean white, int first, int second, int[] setup) {
+        _dice = new Dice(first, second);
+        _positions = new Positions(setup);
+        _availableRolls = new ArrayList<>();
+        _legalMoves = new HashSet<>();
+        determineAvailableRolls();
+        updateLegalMoves();
+        updateGameOver();
     }
 
     // TODO: Consider abstracting away into a View class.
@@ -120,7 +132,7 @@ public class State {
             if (_positions.occupied(targetIndex) && oppositeColorsAtIndices(startIndex,
                                                                           targetIndex)) {
                 /* Move is a capture. */
-                _positions.capture(targetIndex);
+                _positions.capture(startIndex, targetIndex);
             } else {
                 // Perform the move
                 _positions.decrement(startIndex);
@@ -142,7 +154,8 @@ public class State {
             updateLegalMoves();
         }
         if (_positions.numPieces(white()) != Positions.NUM_PIECES_PER_SIDE) {
-            _positions.print();
+            print();
+            System.out.println("Number of pieces: " + _positions.numPieces(white()) + "white?: " + white());
             throw new BackgammonError("INVARIANT VIOLATED: Number of total pieces for either side"
                                               + " should remain constant when including captured "
                                               + "and escaped pieces.");
@@ -167,7 +180,7 @@ public class State {
         if (index2 == Positions.getEscapeIndex(false) || index2 == Positions.getCaptureIndex(false)) {
             numAtPos2 = -numAtPos2;
         }
-        return (_positions.get(index1) ^ _positions.get(index2)) < 0;
+        return (numAtPos1 ^ numAtPos2) < 0;
     }
 
     // TODO: Consider implementing this everywhere instead of _positions.get()
@@ -356,28 +369,29 @@ public class State {
             if (positionCanBeMovedToByActivePlayer(targetIndex)) {
                 _legalMoves.add(Move.fromCaptured(white(), targetIndex, roll));
             }
-        }
-        for (int startIndex : activePlayerBoardPositions()) {
-            int targetIndex = white() ? startIndex + roll : startIndex - roll;
-            // Check if the target index takes a piece off the board.
-            if (!Positions.validBoardIndex(targetIndex)) {
-                // Allow if all pieces in end zone AND it is a perfect escape or last piece on
-                // the board
+        } else {
+            for (int startIndex : activePlayerBoardPositions()) {
+                int targetIndex = white() ? startIndex + roll : startIndex - roll;
+                // Check if the target index takes a piece off the board.
+                if (!Positions.validBoardIndex(targetIndex)) {
+                    // Allow if all pieces in end zone AND it is a perfect escape or last piece on
+                    // the board
 
-                // Allow any move that overshoots the board (i.e takes it off the board)
+                    // Allow any move that overshoots the board (i.e takes it off the board)
 
-                // Allow moves that perfectly take a piece to the end zone. (e.g. there is a
-                // piece at position 4 and 5
-                // and white rolls a 4. In this scenario, the piece at position 4 can escape
-                // to the end zone OR the position 5 piece can be moved to position 1.
-                if (allPiecesInEndZone()) {
-                    if (perfectEscape(targetIndex) || isLastPieceOnBoard(startIndex)) {
-                        _legalMoves.add(Move.escape(white(), startIndex, roll));
+                    // Allow moves that perfectly take a piece to the end zone. (e.g. there is a
+                    // piece at position 4 and 5
+                    // and white rolls a 4. In this scenario, the piece at position 4 can escape
+                    // to the end zone OR the position 5 piece can be moved to position 1.
+                    if (allPiecesInEndZone()) {
+                        if (perfectEscape(targetIndex) || isLastPieceOnBoard(startIndex)) {
+                            _legalMoves.add(Move.escape(white(), startIndex, roll));
+                        }
                     }
-                }
-            } else {
-                if (positionCanBeMovedToBy(targetIndex, white())) {
-                    _legalMoves.add(Move.move(startIndex, targetIndex, roll));
+                } else {
+                    if (positionCanBeMovedToBy(targetIndex, white())) {
+                        _legalMoves.add(Move.move(startIndex, targetIndex, roll));
+                    }
                 }
             }
         }
@@ -391,6 +405,9 @@ public class State {
         Set<Integer> uniqueRemainingRolls = new HashSet<>(_availableRolls);
         for (int roll : uniqueRemainingRolls) {
             updateLegalMovesFromRoll(roll);
+        }
+        if (_legalMoves.isEmpty()) {
+            _legalMoves.add(Move.PASS);
         }
     }
 
