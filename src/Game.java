@@ -1,4 +1,6 @@
+import java.io.IOException;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Set;
 
 /**
@@ -15,24 +17,24 @@ public class Game {
     }
 
     public void play() {
-        System.out.println("Starting game.");
-        _state.print();
+        System.out.println("Starting game.\n\n");
         while (!gameOver()) {
             turn();
-            _state.print();
         }
-        System.out.println("Game over.");
+        System.out.println("Game over. Winner is " + _state.whiteWon());
     }
 
     public void turn() {
-        _state.roll(); // TODO: Dice should not be rerolled on the first turn.
+        System.out.println("Executing Turn\n");
+        _state.roll(); // TODO: Dice should not be rerolled on the first turn if doesWhiteStart
+        // is called and already rolls the dice.
         while (!availableRolls().isEmpty() && !legalMoves().isEmpty()) {
+            _state.print();
             Move move = selectMove(legalMoves());
             System.out.println("Playing move: " + move);
             makeMove(move);
-            _state.print();
         }
-        // TODO: Are draws possible? I don't think so. If so, must check for two consecutive passes.
+        _state.switchTurn();
     }
 
     /** Returns a move selected from the move picker associated with the active player. */
@@ -48,15 +50,18 @@ public class Game {
      * Determine which side starts the game.
      */
     private boolean doesWhiteStart() {
-        if (_state.first() > _state.second()) {
-            return true;
-        } else if (_state.first() < _state.second()) {
-            return false;
-        } else {
-            /* If the dice are equal, re-roll until distinct. */
-            _state.roll();
-            return doesWhiteStart();
-        }
+        // TODO: Remove, only temporary
+        _state.roll();
+        return false;
+//        if (_state.first() > _state.second()) {
+//            return true;
+//        } else if (_state.first() < _state.second()) {
+//            return false;
+//        } else {
+//            /* If the dice are equal, re-roll until distinct. */
+//            _state.roll();
+//            return doesWhiteStart();
+//        }
     }
 
     public void makeMove(Move move) {
