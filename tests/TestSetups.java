@@ -48,7 +48,13 @@ public class TestSetups {
             2, 2, 2, 2, 2, -2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 13, 0, 0
     };
 
-
+    /** All but five pieces for either side have escaped. The five pieces for either side are
+     * right before their respective escape squares. That is, the final board position in the
+     * respective directions that both colors move.
+     */
+    public static final int[] ESCAPE = {
+            -5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 10, 10, 0, 0
+    };
 
 
 

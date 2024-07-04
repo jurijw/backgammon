@@ -28,7 +28,7 @@ class PositionsTest {
             Positions.BOARD_SIZE + 3
     };
     /** The board postions occupied by white in the default starting configuration. */
-    private static final List<Integer> DEFAULT_WHITE_BOARD_POSITIONS = List.of(0, 11, 17, 19);
+    private static final List<Integer> DEFAULT_WHITE_BOARD_POSITIONS = List.of(0, 11, 16, 18);
 
     /** A method to be run before each test. Initializes positionsDefault to a new default
      * Positions() instance.
@@ -66,7 +66,7 @@ class PositionsTest {
 
     @Test
     void occupied() {
-        List<Integer> occupiedIndexList = List.of(0, 5, 7, 11, 12, 17, 19, 23);
+        List<Integer> occupiedIndexList = List.of(0, 5, 7, 11, 12, 16, 18, 23);
         for (int i = 0; i < Positions.BOARD_SIZE; i++) {
             if (occupiedIndexList.contains(i)) {
                 assertTrue(positionsDefault.occupied(i), "Failed at index: " + i);
@@ -106,7 +106,8 @@ class PositionsTest {
         assertEquals(0, positionsDefault.numCaptured(false));
         /* Capture one of white's pieces. */
         positionsDefault.set(0, 1);
-        positionsDefault.capture(0);
+        positionsDefault.set(1, 1);
+        positionsDefault.capture(5, 0);
         assertEquals(1, positionsDefault.numCaptured(true));
     }
 
@@ -121,7 +122,7 @@ class PositionsTest {
         Set<Integer> occupiedByWhiteSet =
                 new HashSet<>(positionsDefault.occupiedBoardPositions(true));
         Set<Integer> defaultOccupiedByWhiteSet = new HashSet<>(DEFAULT_WHITE_BOARD_POSITIONS);
-        assertTrue(occupiedByWhiteSet.equals(defaultOccupiedByWhiteSet));
+        assertEquals(occupiedByWhiteSet, defaultOccupiedByWhiteSet);
     }
 
     @Test
@@ -178,9 +179,9 @@ class PositionsTest {
 
     @Test
     void capture() {
-        assertThrows(BackgammonError.class, () -> positionsDefault.capture(0));
+        assertThrows(BackgammonError.class, () -> positionsDefault.capture(5, 0));
         positionsDefault.decrement(0);
-        positionsDefault.capture(0);
+        positionsDefault.capture(5, 0);
         assertEquals(-1, positionsDefault.get(0));
         assertEquals(1, positionsDefault.numCaptured(true));
     }
