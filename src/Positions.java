@@ -355,7 +355,7 @@ public class Positions {
                 total += posCount;
             }
             if (!white && posCount < 0) {
-                total += posCount;
+                total -= posCount;
             }
         }
         if (white) {
@@ -366,18 +366,22 @@ public class Positions {
         return total;
     }
 
-    /** Capture the piece at position INDEX. This means incrementing the number of captured
-     * pieces for the color that initially occupies the index and then switching the color of the
-     * single piece that occupies the position. */
-    public void capture(int index) {
-        checkValidBoardIndex("Can only capture pieces on the board.");
-        if (!single(index)) {
+    /** Capture the piece at position TARGETINDEX from position STARTINDEX. This means incrementing
+     * the number of captured pieces for the color that initially occupies the index, switching the color of the
+     * single piece that occupies the position, and decrementing the number of pieces at the
+     * start index. */
+    public void capture(int startIndex, int targetIndex) {
+        // TODO: Ensure opposite colors. Move oppositeColor method back here.
+        checkValidBoardIndex("Can only capture pieces on the board."); // TODO: Sureley this
+        // needs to be passed an index...
+        if (!single(targetIndex)) {
             throwInvalidPositionIndexError("There must be exactly one piece in a position to "
                                                    + "apply a capture");
         }
-        boolean isWhiteAtIndex = occupiedBy(true, index);
+        boolean isWhiteAtIndex = occupiedBy(true, targetIndex);
         _positions[getCaptureIndex(isWhiteAtIndex)] += 1;
-        set(index, -get(index));
+        set(targetIndex, -get(targetIndex));
+        decrement(startIndex);
     }
 
     void print() {
