@@ -29,9 +29,14 @@ public class Move {
      * @return A Move instance containing information about the move.
      */
     static Move move(int startIndex, int endIndex, int roll) {
-        // FIXME: Check indices are valid. Also remember that the _MOVES array contains moves
-        //  moving from a position
-        //  to itself, as well as moves from the captured indices to end zones, etc.
+        if (!Positions.validBoardIndex(startIndex, endIndex)) {
+            throw new BackgammonError("Indices passed to this Move constructor must be board "
+                                              + "indices. Use Move.fromCaptured and Move.escape "
+                                              + "to deal with captured and escaped pieces.");
+        }
+        if (roll < 1 || roll > 6) {
+            throw new BackgammonError("INVALID ROLL: " + roll);
+        }
         return MOVES[startIndex][endIndex][roll - 1];
     }
 
@@ -92,7 +97,8 @@ public class Move {
     /** A move representing a pass. To be used when no legal moves are available. */
     static final Move PASS = new Move();
 
-    /** A nested array storing all possible moves. */
+    /** A nested array storing all possible moves. Note, that this also includes illegal moves,
+     * such as moves from one side's escape index to the other side's capture index. */
     private static final Move[][][] MOVES
             = new Move[Positions.SIZE][Positions.SIZE][Dice.NUM_SIDES];
 

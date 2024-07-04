@@ -31,15 +31,14 @@ public class Positions {
     /** The start index for the black end zone. */
     private static final int END_ZONE_END_INDEX_WHITE = 23;
 
-    // TODO: Consider using an Enum to name all these indices.
     /** The index associated with white's escaped pieces. */
-    private static final int WHITE_ESCAPE_INDEX = BOARD_SIZE;
+    static final int WHITE_ESCAPE_INDEX = BOARD_SIZE;
     /** The index associated with black's escaped pieces. */
-    private static final int BLACK_ESCAPE_INDEX = BOARD_SIZE + 1;
+    static final int BLACK_ESCAPE_INDEX = BOARD_SIZE + 1;
     /** The index associated with white's captured pieces. */
-    private static final int WHITE_CAPTURED_INDEX = BOARD_SIZE + 2;
+    static final int WHITE_CAPTURED_INDEX = BOARD_SIZE + 2;
     /** The index associated with black's captured pieces. */
-    private static final int BLACK_CAPTURED_INDEX = BOARD_SIZE + 3;
+    static final int BLACK_CAPTURED_INDEX = BOARD_SIZE + 3;
 
     /**
      * The default board setup structure. The trailing four zeros represent escaped and captured
@@ -57,6 +56,7 @@ public class Positions {
         this._positions = DEFAULT_POSITION_SETUP.clone();
     }
 
+    /** Construct a positions instance from an input SETUP array. */
     public Positions(int[] setup) {
         if (setup.length != SIZE) {
             throw new BackgammonError("Position instance must be setup with an array of length: " + SIZE);
@@ -73,8 +73,8 @@ public class Positions {
      * @param white Specifies the player whose captured index should be returned.
      * @return The index of the specified player's captured pieces in the _positions array.
      */
-    static int getCaptureIndex(boolean white) {
-        return white ? WHITE_CAPTURED_INDEX : BLACK_CAPTURED_INDEX;
+    static int getCaptureIndex(Side side) {
+        return side == Side.WHITE ? WHITE_CAPTURED_INDEX : BLACK_CAPTURED_INDEX;
     }
 
     /**
@@ -384,8 +384,10 @@ public class Positions {
         decrement(startIndex);
     }
 
-    void print() {
-        System.out.println(Arrays.toString(_positions));
+    /** Return a (semi) readible representation of the piece configuration. */
+    @Override
+    public String toString() {
+        return Arrays.toString(_positions);
     }
 
     /**

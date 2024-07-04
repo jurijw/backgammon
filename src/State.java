@@ -11,8 +11,6 @@ import java.util.Set;
 //  something happens, we can read the latest game state and replay the last move. Then again, we
 //  could maybe achieve a similar result simply by dropping a call frame in the debugger.
 
-// TODO: Check for game over and also make sure passing moves are returned in legal moves if
-//  no move is available.
 public class State {
 
     State() {
@@ -21,7 +19,7 @@ public class State {
         _availableRolls = new ArrayList<>();
         _legalMoves = new HashSet<>();
         _gameOver = false;
-        _whiteWon = false; // TODO: Use an enum for the two sides.
+        _winner = Side.UNDETERMINED;
         // TODO: Do I need to determine whose turn it is here? If I leave it uninitialized, black
         //  will always start since booleans by default are set to false.
     }
@@ -432,15 +430,15 @@ public class State {
         }
     }
 
-    /** This has no meaning unless the game is over. Once the game is over, true iff white has
-     * won. */ // TODO: Replace with enum.
-    public boolean whiteWon() {
-        return _whiteWon;
+    /** Return the winner according to the current game state. UNDETERMINED if the game is not
+     * over. */
+    public Side winner() {
+        return _winner;
     }
 
     public void print() {
         printBoard();
-        _positions.print();
+        _positions.toString();
         System.out.print("Captured: W: " + _positions.numCaptured(true) + ", B: " + _positions.numCaptured(false));
         System.out.println(" Escaped: W: " + _positions.numEscaped(true) + ", B: " + _positions.numEscaped(false));
         String side = white() ? "WHITE" : "BLACK";
@@ -454,9 +452,8 @@ public class State {
     /** True iff the game is over */
     private boolean _gameOver;
 
-    /** Only meaningful once the game is over. True if white has won the game, false if black has
-     * won the game. */
-    private boolean _whiteWon;
+    /** The winner of the game. UNDETERMINED if the game has not ended yet. */
+    private Side _winner;
 
     /** A pair of dice associated with this board. */
     private final Dice _dice;
