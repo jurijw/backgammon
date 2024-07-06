@@ -118,25 +118,25 @@ class PositionsTest {
     }
 
     @Test
-    void occupiedBoardPositions() {
+    void occupiedBoardIndices() {
         Set<Integer> occupiedByWhiteSet =
-                new HashSet<>(positionsDefault.occupiedBoardPositions(true));
+                new HashSet<>(positionsDefault.occupiedBoardIndices(true));
         Set<Integer> defaultOccupiedByWhiteSet = new HashSet<>(DEFAULT_WHITE_BOARD_POSITIONS);
         assertEquals(occupiedByWhiteSet, defaultOccupiedByWhiteSet);
     }
 
     @Test
-    void isEndZonePosition() {
+    void isEndZoneIndex() {
         for (int i = 0; i < Positions.BOARD_SIZE; i++) {
             if (i >= 0 && i < 6) {
-                assertTrue(positionsDefault.isEndZonePosition(i, false));
-                assertFalse(positionsDefault.isEndZonePosition(i, true));
+                assertTrue(positionsDefault.isEndZoneIndex(i, false));
+                assertFalse(positionsDefault.isEndZoneIndex(i, true));
             } else if (i >= 18 && i < Positions.BOARD_SIZE) {
-                assertFalse(positionsDefault.isEndZonePosition(i, false));
-                assertTrue(positionsDefault.isEndZonePosition(i, true));
+                assertFalse(positionsDefault.isEndZoneIndex(i, false));
+                assertTrue(positionsDefault.isEndZoneIndex(i, true));
             } else {
-                assertFalse(positionsDefault.isEndZonePosition(i, true));
-                assertFalse(positionsDefault.isEndZonePosition(i, false));
+                assertFalse(positionsDefault.isEndZoneIndex(i, true));
+                assertFalse(positionsDefault.isEndZoneIndex(i, false));
             }
         }
     }

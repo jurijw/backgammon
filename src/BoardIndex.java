@@ -1,5 +1,7 @@
 public class Index {
-
+    // TODO: Consider splitting indices into board indices and non-board indices. Maybe we don't
+    //  even need off-board indices? Perhaps it is better to access escaped and captured pieces
+    //  directly through the Positions class?
     private Index(int index) {
         this._index = index;
         this._isBoardIndex = validBoardIndex(index);
@@ -118,6 +120,20 @@ public class Index {
      */
     private void checkValidBoardIndex(int... indices) {
         checkValidBoardIndex("", indices);
+    }
+
+    /** Throw an error if my index does not refer to a board index. */
+    void ensureValidBoardIndex() {
+        if (!isBoardIndex()) {
+            throw new BackgammonError("Index does not correspond to a board index.");
+        }
+    }
+
+    /** Throws an error if any of the passed INDICES are not board indices. */
+    static void ensureValidBaordIndices(Index... indices) {
+        for (Index index : indices) {
+            index.ensureValidBoardIndex();
+        }
     }
 
     /** The index in the _positions array I represent. */
