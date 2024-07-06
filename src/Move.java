@@ -1,7 +1,19 @@
 public class Move {
+    // TODO: Consider subclasses for different move types.
     /** The number of piece colors. */
     private static final int NUM_COLORS = 2;
 
+    private Move(BoardIndex startIndex, BoardIndex targetIndex, int roll, boolean isPass,
+                 boolean isBoardMove, boolean isEscape, boolean isReentry, Side side) {
+        this._startIndex = startIndex;
+        this._targetIndex = targetIndex;
+        this._roll = roll;
+        this._isPass = isPass;
+        this._isBoardMove = isBoardMove;
+        this._isEscape = isEscape;
+        this._isReentry = isReentry;
+        this._side = side;
+    }
     /**
      * Class describing a move in the game. A TURN will consist of a maximum of four moves, provided
      * they are valid moves. A move instance captures the start index of a piece to be moved, the
@@ -13,6 +25,7 @@ public class Move {
         this._targetIndex = targetIndex;
         this._roll = roll;
         this._isPass = false;
+        this._isBoardMove = false;
         this._isEscape = false;
         this._isReentry = false;
         this._side = null;
@@ -136,6 +149,8 @@ public class Move {
     private final int _roll;
     /** True iff the move is a passing move. */
     private final boolean _isPass;
+    /** True iff the move is a board move. */
+    private final boolean _isBoardMove;
     /** True iff the move represents a captured piece re-entering the game. */
     private final boolean _isReentry;
     /** True iff the move is an escaping move. */
