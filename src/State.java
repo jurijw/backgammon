@@ -13,37 +13,35 @@ import java.util.Set;
 
 public class State {
 
-    State() {
-        _dice = new Dice();
-        _positions = new Positions();
-        _availableRolls = new ArrayList<>();
-        _legalMoves = new HashSet<>();
-        _gameOver = false;
+    /** Create a State instance. */
+    State(Board board, Dice dice, Side currentSide, List<Integer> remainingRolls) {
+        _board = board;
+        _dice = dice;
+        _currentSide = currentSide;
+        _remainingRolls = remainingRolls;
+
         _winner = Side.UNDETERMINED;
-        // TODO: Do I need to determine whose turn it is here? If I leave it uninitialized, black
-        //  will always start since booleans by default are set to false.
+        updateGameOver();
+        _legalMoves = new HashSet<>();
+        updateLegalMoves();
     }
 
-    /** Create a default state instance where the initial player is specified by WHITE, and the
+    /** Create a default state instance. */
+    State() {
+        this(new Board(), new Dice(), Side.UNDETERMINED, new ArrayList<>());
+    }
+
+    /** Create a default state instance where the initial player is specified by SIDE, and the
      * initial rolls are specified by FIRST and SECOND.
      */
-    State(boolean white, int first, int second) {
-        _dice = new Dice(first, second);
-        _positions = new Positions(); // TODO: Create a method in Positions to set _positions.
-        // Then, _positions here can be made final and we can call the other constructors rather
-        // than repeating code.
-        _availableRolls = new ArrayList<>();
-        _legalMoves = new HashSet<>();
+    State(Side currentSide, int first, int second) {
+        this(new Board(), new Dice(first, second), currentSide, new ArrayList<>());
     }
 
-    State(boolean white, int first, int second, int[] setup) {
-        _dice = new Dice(first, second);
-        _positions = new Positions(setup);
-        _availableRolls = new ArrayList<>();
-        _legalMoves = new HashSet<>();
-        determineAvailableRolls();
-        updateLegalMoves();
-        updateGameOver();
+    /** Create a State instance where the board setup, current side, dice, and remaining rolls
+     * are specified. */
+    State(int[] setup, int first, int second, Side currentSide, List<Integer> remainingRolls) {
+        this(new Board(setup), new Dice(first, second), currentSide, remainingRolls);
     }
 
     // TODO: Consider abstracting away into a View class.
@@ -64,7 +62,7 @@ public class State {
         /* Print the pieces for the top half of the board (positions 1-12). */
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 12; j++) {
-                int numPieces = _positions.get(j);
+                int numPieces = _board.get(BoardIndex.boardIndex(j));
                 if (Math.abs(numPieces) > i) {
                     if (numPieces > 0) {
                         Utils.printWhite();
@@ -88,8 +86,8 @@ public class State {
 
         /* Print the bottom half of the board (positions 13-24). */
         for (int i = 4; i >= 0; i--) {
-            for (int j = Positions.BOARD_SIZE - 1; j >= Positions.BOARD_SIZE / 2; j--) {
-                int numPieces = _positions.get(j);
+            for (int j = Structure.BOARD_SIZE - 1; j >= Structure.BOARD_SIZE / 2; j--) {
+                int numPieces = _board.get(BoardIndex.boardIndex(j));
                 if (Math.abs(numPieces) > i) {
                     if (numPieces > 0) {
                         Utils.printWhite();
@@ -106,15 +104,24 @@ public class State {
         }
 
         /* Print the coordinates for the bottom half of the board (positions 13-24). */
-        for (int i = Positions.BOARD_SIZE - 1; i >= Positions.BOARD_SIZE / 2; i--) {
+        for (int i = Structure.BOARD_SIZE - 1; i >= Structure.BOARD_SIZE / 2; i--) {
             System.out.print(i);
             Utils.printPadding(2);
         }
         System.out.println();
     }
 
-    /** Applies the given MOVE to the BOARD, provided that the MOVE is valid. Also updates the
-     * legal moves set accordingly. */
+    /** Returns true iff the given MOVE represents a capturing move. */
+    private boolean isCapture(Move move) {
+        if (move instanceof ReentryMove || move instanceof BoardMove) {
+            if (_board.occupiedBy(getCurrentSide().opponent(), move.getTargetIndex())) {
+                return _board.single(move.getTargetIndex());
+            }
+        }
+        return false;
+    }
+
+    /** Applies the given MOVE. Also updates the legal moves set accordingly and checks for game over. */
     public void makeMove(Move move) {
         if (!_legalMoves.contains(move)) {
             throw new BackgammonError("INVALID MOVE ATTEMPT: Attempting to make a non-legal move.");
@@ -122,144 +129,73 @@ public class State {
         if (gameOver()) {
             throw new BackgammonError("INVALID MOVE ATTEMPT: The game is over.");
         }
-        if (move.isPass()) {
+        if (move instanceof PassMove) {
             switchTurn();
-        } else {
-            int startIndex = move.start();
-            int targetIndex = move.target();
-            if (_positions.occupied(targetIndex) && oppositeColorsAtIndices(startIndex,
-                                                                          targetIndex)) {
-                /* Move is a capture. */
-                _positions.capture(startIndex, targetIndex);
-            } else {
-                // Perform the move
-                _positions.decrement(startIndex);
-                _positions.increment(targetIndex, white());
-            }
-            _availableRolls.remove((Integer) move.roll());
-            /* If after performing the move / capture, no more rolls are available, switch the
-            turn. */
-//            if (_availableRolls.isEmpty()) {
-//                switchTurn();
-//            }
-            // Moved this functionality into the Game.turn() method.
+            return;
         }
-        // Check for gameOver()
+        /* If the move is not a pass, it will use one of the remaining rolls. */
+        _remainingRolls.remove((Integer) move.getRoll());
+
+        if (move instanceof EscapeMove) {
+            _board.setNumEscaped(move.getSide(), _board.numEscaped(move.getSide()) + 1);
+            _board.decrement(move.getStartIndex());
+            return;
+        }
+        if (isCapture(move)) {
+            /* The move is a capture. */
+            _board.moveToCaptured(move.getTargetIndex());
+        }
+        if (move instanceof ReentryMove) {
+            _board.setNumCaptured(getCurrentSide(), _board.numCaptured(getCurrentSide()) - 1);
+        }
+        if (move instanceof BoardMove) {
+            _board.decrement(move.getStartIndex());
+        }
+        _board.increment(move.getTargetIndex(), getCurrentSide());
+
+        /* Check if the game has ended. */
         updateGameOver();
-        // Update the new legal moves, unless the game is over, or the turn is over (no more
-        // available rolls)
-        if (!gameOver() && !_availableRolls.isEmpty()) {
-            updateLegalMoves();
-        }
-        if (_positions.numPieces(white()) != Positions.NUM_PIECES_PER_SIDE) {
-            print();
-            System.out.println("Number of pieces: " + _positions.numPieces(white()) + "white?: " + white());
-            throw new BackgammonError("INVARIANT VIOLATED: Number of total pieces for either side"
-                                              + " should remain constant when including captured "
-                                              + "and escaped pieces.");
-            // TODO: This is slow. Don't use in production.
+        if (!gameOver()) {
+            if (getAvailableRolls().isEmpty()) {
+                /* If after performing the move, no more rolls are available, switch the turn. */
+                switchTurn();
+            } else {
+                /* Otherwise, update legal moves. */
+                updateLegalMoves();
+            }
         }
     }
 
 
-    /**
-     * Returns true iff the pieces at INDEX1 and INDEX2 are of opposite color.
-     */
-    // FIXME: Ensure this works.
-    // TODO: Move this back into positions class.
-    private boolean oppositeColorsAtIndices(int index1, int index2) {
-        Positions.checkValidIndex(index1, index2);
-        int numAtPos1 = _positions.get(index1);
-        int numAtPos2 = _positions.get(index2);
-        // If indices refer to black capture / escape indices, flip the value
-        if (index1 == Positions.getEscapeIndex(false) || index1 == Positions.getCaptureIndex(false)) {
-            numAtPos1 = -numAtPos1;
-        }
-        if (index2 == Positions.getEscapeIndex(false) || index2 == Positions.getCaptureIndex(false)) {
-            numAtPos2 = -numAtPos2;
-        }
-        return (numAtPos1 ^ numAtPos2) < 0;
-    }
 
     // TODO: Consider implementing this everywhere instead of _positions.get()
     /**
      * Get the number of pieces at the board position INDEX. Negative numbers indicate black
      * pieces.
      */
-    public int get(int index) {
-        return _positions.get(index);
+    public int get(BoardIndex index) {
+        return _board.get(index);
     }
 
     /** Returns true iff the position at INDEX is occupied by the active player. */
-    boolean occupiedByActivePlayer(int index) {
-        return _positions.occupiedBy(white(), index);
-    }
-
-    /**
-     * Return the number of white pieces remaining on the board if WHITE, else number of black
-     * pieces.
-     */
-    // TODO: Move to Positions class. Ensure no duplicate method exists.
-    public int numPiecesRemainingOnBoard(boolean white) {
-        int count = 0;
-        for (int position : _positions.occupiedBoardPositions(white)) {
-            count += _positions.get(position);
-        }
-        return count;
-    }
-
-    /** Return the number of pieces remaining on the board for the active player. */
-    public int numPiecesRemaining() {
-        return numPiecesRemainingOnBoard(white());
-    }
-
-    /**
-     * Returns true iff the player (designated by WHITE) has no pieces behind the position INDEX on
-     * the board.
-     **/
-    public boolean isLastPieceOnBoard(int index, boolean white) {
-        for (int position : _positions.occupiedBoardPositions(white)) {
-            if (position > index) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Returns true iff all of a player's pieces are in the end zone (final 6 positions), or have
-     * already "escaped" the board. The player that is checked for is given by the WHITE boolean.
-     */
-    public boolean allPiecesInEndZone(boolean white) {
-        for (int position : _positions.occupiedBoardPositions(white)) {
-            if (!_positions.isEndZonePosition(position, white)) {
-                return false;
-            }
-        }
-        return true;
+    boolean occupiedByActivePlayer(BoardIndex index) {
+        return _board.occupiedBy(_currentSide, index);
     }
 
     /** Returns true iff all the active player's pieces (on the board) are in the end zone. */
     public boolean allPiecesInEndZone() {
-        return allPiecesInEndZone(white());
+        return _board.allPiecesInEndZone(_currentSide);
     }
 
-    /** Returns true iff it is white's turn to play. */
-    public boolean white() {
-        return _white;
-    }
-
-    /**
-     * Set the active player to WHITE, where if WHITE is true, then it is the white player's turn,
-     * otherwise it is black's turn.
-     */
-    public void setTurn(boolean white) {
-        _white = white;
+    /** A getter for the currently active side. */
+    public Side getCurrentSide() {
+        return _currentSide;
     }
 
     /** Switch the active player on my board. */
     public void switchTurn() {
-        this._white = !this._white;
+        _currentSide.ensureDetermined();
+        _currentSide = _currentSide.opponent();
     }
 
     /** Roll my dice, update the available rolls and legal moves. */
@@ -290,57 +226,39 @@ public class State {
      * should only run once per turn (after the dice are rolled).
      */
     void determineAvailableRolls() {
-        _availableRolls.clear();
-        _availableRolls.add(first());
-        _availableRolls.add(second());
+        _remainingRolls.clear();
+        _remainingRolls.add(first());
+        _remainingRolls.add(second());
         if (pasch()) {
-            _availableRolls.add(first());
-            _availableRolls.add(second());
+            _remainingRolls.add(first());
+            _remainingRolls.add(second());
         }
     }
 
     /** Getter for my available rolls. */
     List<Integer> getAvailableRolls() {
-        return _availableRolls;
-    }
-
-    /** Returns true iff the active player has no pieces behind the position INDEX. **/
-    private boolean isLastPieceOnBoard(int index) {
-        return isLastPieceOnBoard(index, white());
+        return _remainingRolls;
     }
 
     /**
      * Returns an integer array containing the indices of all occupied board positions of the active
      * player.
      */
-    private List<Integer> activePlayerBoardPositions() {
-        return _positions.occupiedBoardPositions(white());
+    private List<BoardIndex> activePlayerBoardPositions() {
+        return _board.occupiedBoardIndices(_currentSide);
     }
 
     /** Returns true iff at least one of the active player's pieces has been captured. */
     private boolean activePlayerHasBeenCaptured() {
-        return _positions.hasCapturedPiece(white());
-    }
-
-    /**
-     * Returns true iff the INDEX provided can be moved to by the player specified by WHITE. That
-     * is, the position is empty, contains only one of the opponent's pieces (indicating it can be
-     * captured), or the position is not fully occupied by pieces of the specified player.
-     */
-    public boolean positionCanBeMovedToBy(int index, boolean white) {
-        if (_positions.full(index)) {
-            return false;
-        }
-        int numPiecesAtPos = _positions.get(index);
-        return white ? numPiecesAtPos >= -1 : numPiecesAtPos <= 1;
+        return _board.hasCapturedPiece(_currentSide);
     }
 
     /**
      * Returns true iff the board position at INDEX can be moved to by the active player. That is,
      * it is either empty, or contains only one of the opponents pieces.
      */
-    private boolean positionCanBeMovedToByActivePlayer(int index) {
-        return positionCanBeMovedToBy(index, white());
+    private boolean positionCanBeMovedToByActivePlayer(BoardIndex index) {
+        return _board.positionCanBeMovedToBy(index, getCurrentSide());
     }
 
     /**
@@ -353,7 +271,7 @@ public class State {
      * @return True iff the index constitutes a "perfect escape" for the active player.
      */
     private boolean perfectEscape(int targetIndex) {
-        return white() ? targetIndex == Positions.BOARD_SIZE : targetIndex == -1;
+        return getCurrentSide().isWhite() ? targetIndex == Structure.BOARD_SIZE : targetIndex == -1;
     }
 
     // FIXME: Added a move 27 -> 18
@@ -362,50 +280,47 @@ public class State {
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
     private void updateLegalMovesFromRoll(int roll) {
         if (activePlayerHasBeenCaptured()) {
-            /* Only permit moves that free the captured piece(s). */
-            int targetIndex = white() ? roll - 1 : Positions.BOARD_SIZE - roll;
+            /* Only permit reentry moves. */
+            BoardIndex targetIndex = ReentryMove.determineTargetIndex(roll, _currentSide);
             if (positionCanBeMovedToByActivePlayer(targetIndex)) {
-                _legalMoves.add(Move.fromCaptured(white(), targetIndex, roll));
+                _legalMoves.add(ReentryMove.move(roll, _currentSide));
             }
         } else {
-            for (int startIndex : activePlayerBoardPositions()) {
-                int targetIndex = white() ? startIndex + roll : startIndex - roll;
-                // Check if the target index takes a piece off the board.
-                if (!Positions.validBoardIndex(targetIndex)) {
-                    // Allow if all pieces in end zone AND it is a perfect escape or last piece on
-                    // the board
-
-                    // Allow any move that overshoots the board (i.e takes it off the board)
-
-                    // Allow moves that perfectly take a piece to the end zone. (e.g. there is a
-                    // piece at position 4 and 5
-                    // and white rolls a 4. In this scenario, the piece at position 4 can escape
-                    // to the end zone OR the position 5 piece can be moved to position 1.
+            for (BoardIndex startIndex : activePlayerBoardPositions()) {
+                int targetIndexPos = getCurrentSide().isWhite() ? startIndex.getIndex() + roll :
+                        startIndex.getIndex() - roll;
+                if (!BoardIndex.validBoardIndices(targetIndexPos)) {
+                    /* The roll would take the piece off the board. */
+                    // Allow if all pieces in end zone AND it is a perfect escape, or allow if last
+                    // piece on the board
                     if (allPiecesInEndZone()) {
-                        if (perfectEscape(targetIndex) || isLastPieceOnBoard(startIndex)) {
-                            _legalMoves.add(Move.escape(white(), startIndex, roll));
+                        if (perfectEscape(targetIndexPos) || _board.isLastPieceOnBoard(startIndex,
+                                                                                    getCurrentSide())) {
+                            _legalMoves.add(EscapeMove.move(startIndex, roll, getCurrentSide()));
                         }
                     }
                 } else {
-                    if (positionCanBeMovedToBy(targetIndex, white())) {
-                        _legalMoves.add(Move.move(startIndex, targetIndex, roll));
+                    /* The roll keeps the piece on the board. */
+                    BoardIndex targetIndex = BoardIndex.boardIndex(targetIndexPos);
+                    if (positionCanBeMovedToByActivePlayer(targetIndex)) {
+                        _legalMoves.add(BoardMove.move(startIndex, targetIndex, roll));
                     }
                 }
             }
         }
     }
 
-    /** Update the all possible legal moves, and their corresponding dice rolls. This should be run
+    /** Update all possible legal moves, and their corresponding dice rolls. This should be run
      *  after every roll and after every move is played, so long as there are still available rolls.
      */
     private void updateLegalMoves() {
         _legalMoves.clear();
-        Set<Integer> uniqueRemainingRolls = new HashSet<>(_availableRolls);
+        Set<Integer> uniqueRemainingRolls = new HashSet<>(_remainingRolls);
         for (int roll : uniqueRemainingRolls) {
             updateLegalMovesFromRoll(roll);
         }
         if (_legalMoves.isEmpty()) {
-            _legalMoves.add(Move.PASS);
+            _legalMoves.add(PassMove.PASS);
         }
     }
 
@@ -424,9 +339,9 @@ public class State {
      * accordingly.
      */
     public void updateGameOver() {
-        if (_positions.allEscaped(white())) {
+        if (_board.allEscaped(_currentSide)) {
             _gameOver = true;
-            _whiteWon = white();
+            _winner = _currentSide;
         }
     }
 
@@ -438,36 +353,35 @@ public class State {
 
     public void print() {
         printBoard();
-        _positions.toString();
-        System.out.print("Captured: W: " + _positions.numCaptured(true) + ", B: " + _positions.numCaptured(false));
-        System.out.println(" Escaped: W: " + _positions.numEscaped(true) + ", B: " + _positions.numEscaped(false));
-        String side = white() ? "WHITE" : "BLACK";
-        System.out.println("TURN: " + side + ";  " + _dice + ",  " + _availableRolls);
+        _board.toString();
+        System.out.print("Captured: W: " + _board.numCaptured(Side.WHITE) + ", B: " + _board.numCaptured(Side.BLACK));
+        System.out.println(" Escaped: W: " + _board.numEscaped(Side.WHITE) + ", B: " + _board.numEscaped(Side.BLACK));
+        System.out.println("TURN: " + getCurrentSide() + ";  " + _dice + ",  " + _remainingRolls);
         System.out.println(_legalMoves);
     }
 
-    /** True iff it is white's turn to play on this board. */
-    private boolean _white;
-
-    /** True iff the game is over */
-    private boolean _gameOver;
+    /** The currently active side. */
+    private Side _currentSide;
 
     /** The winner of the game. UNDETERMINED if the game has not ended yet. */
     private Side _winner;
+
+    /** True iff the game is over */
+    private boolean _gameOver;
 
     /** A pair of dice associated with this board. */
     private final Dice _dice;
 
     /** The Positions object associated with this board. */
-    private final Positions _positions;
+    private final Board _board;
 
     /** A list of all legal moves that can be made based on the current state. */
     private final Set<Move> _legalMoves;
 
     /**
-     * A set of available rolls. That is rolls that have not yet been used to make a move in a
+     * A set of remaining rolls. That is rolls that have not yet been used to make a move in a
      * given turn. If a Pasch is rolled (say two 3s), then this will store four 3s, as active player
      * can make up to four moves, using each of the four 3s one time.
      */
-    private final List<Integer> _availableRolls;
+    private final List<Integer> _remainingRolls;
 }

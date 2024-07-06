@@ -1,7 +1,9 @@
 public abstract class Move {
 
     Move(BoardIndex startIndex, BoardIndex targetIndex, int roll, Side side) {
-        if (side != null) { side.ensureDetermined(); }
+        if (side != null) {
+            side.ensureDetermined();
+        }
         this._startIndex = startIndex;
         this._targetIndex = targetIndex;
         this._roll = roll;
@@ -29,7 +31,6 @@ public abstract class Move {
     }
 
     /** Returns a readable string representing the move. */
-    @Override
     public abstract String toString();
 
     /** The starting index of the piece to be moved. */

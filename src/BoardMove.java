@@ -5,7 +5,9 @@ public class BoardMove extends Move {
 
     @Override
     public String toString() {
-        return "BoardMove: " + getStartIndex() + "->" + getTargetIndex() + " (" + roll() + ")";
+        return String.format("Board Move: %d -> %d [%d]", getStartIndex().getIndex(),
+                             getTargetIndex().getIndex(),
+                             getRoll());
     }
 
     /**

@@ -3,7 +3,7 @@ public class ReentryMove extends Move {
         super(null, targetIndex, roll, side);
     }
 
-    private static BoardIndex determineTargetIndex(int roll, Side side) {
+    static BoardIndex determineTargetIndex(int roll, Side side) {
         if (side.isWhite()) {
             return BoardIndex.boardIndex(roll - 1);
         } else {
@@ -38,7 +38,7 @@ public class ReentryMove extends Move {
             if (side.isUndetermined()) {
                 continue;
             }
-            for (int roll = 1; roll <= Structure.BOARD_SIZE; roll++) {
+            for (int roll = 1; roll <= Dice.NUM_SIDES; roll++) {
                 BoardIndex targetIndex = determineTargetIndex(roll, side);
                 REENTRY_MOVES[roll - 1][side.ordinal()] = new ReentryMove(targetIndex, roll, side);
             }

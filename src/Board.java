@@ -91,22 +91,15 @@ public class Board {
         return Math.abs(get(boardIndex)) == 1;
     }
 
-    /** Throws an error if SIDE is UNDETERMINED. */
-    private void ensureSideDetermined(Side side) {
-        if (side.isUndetermined()) {
-            throw new BackgammonError("This method should not be called on side UNDETERMINED.");
-        }
-    }
-
     /** Returns the number of escaped pieces of the player specified by SIDE. */
     public int numEscaped(Side side) {
-        ensureSideDetermined(side);
+        side.ensureDetermined();
         return side.isWhite() ? _numWhiteEscaped : _numBlackEscaped;
     }
 
     /** Returns the number of captured pieces of the player specified by SIDE. */
     public int numCaptured(Side side) {
-        ensureSideDetermined(side);
+        side.ensureDetermined();
         return side.isWhite() ? _numWhiteCaptured : _numBlackCaptured;
     }
 
@@ -132,8 +125,8 @@ public class Board {
                                       startBoardIndex.getIndex(), endBoardIndex.getIndex());
         }
         ArrayList<BoardIndex> occupiedBoardIndicesArray = new ArrayList<>();
-        for (BoardIndex boardIndex = startBoardIndex; boardIndex.getIndex() <= endBoardIndex.getIndex(); boardIndex
-                = BoardIndex.boardIndex(boardIndex.getIndex() + 1)) {
+        for (int i = startBoardIndex.getIndex(); i <= endBoardIndex.getIndex(); i++) {
+            BoardIndex boardIndex = BoardIndex.boardIndex(i);
             int valAtIndex = get(boardIndex);
             if (occupiedBy(side, boardIndex)) {
                 occupiedBoardIndicesArray.add(boardIndex);
@@ -155,7 +148,7 @@ public class Board {
      * Return true if a BOARDINDEX is in the end zone of the player specified by SIDE.
      */
     public boolean isEndZoneIndex(BoardIndex boardIndex, Side side) {
-        ensureSideDetermined(side);
+        side.ensureDetermined();
         if (side.isWhite()) {
             return (Structure.END_ZONE_START_INDEX_WHITE <= boardIndex.getIndex()) && (boardIndex.getIndex() <= Structure.END_ZONE_END_INDEX_WHITE);
         }
@@ -168,7 +161,7 @@ public class Board {
      * increment(4) results in _positions[4] -> -4.
      */
     public void increment(BoardIndex boardIndex, Side side) {
-        ensureSideDetermined(side);
+        side.ensureDetermined();
         int delta = side.isWhite() ? 1 : -1;
         set(boardIndex, get(boardIndex) + delta);
     }
@@ -185,6 +178,15 @@ public class Board {
         set(boardIndex, newNumPieces);
     }
 
+    public void incrementCaptured(Side side) {
+        side.ensureDetermined();
+        if (side.isWhite()) {
+            _numWhiteCaptured += 1;
+        } else {
+            _numBlackCaptured += 1;
+        }
+    }
+
     private void ensureWithinNumPiecesPerSide(int numPieces) {
         if (numPieces > Structure.NUM_PIECES_PER_SIDE) {
             throw new BackgammonError("Number of pieces: %d exceeds the number of pieces per "
@@ -194,12 +196,22 @@ public class Board {
     }
 
     public void setNumCaptured(Side side, int numCaptured) {
-        ensureSideDetermined(side); // TODO: Eventually move this to the SIDE enum.
+        side.ensureDetermined();
         ensureWithinNumPiecesPerSide(numCaptured);
         if (side.isWhite()) {
             _numWhiteCaptured = numCaptured;
         } else {
             _numBlackCaptured = numCaptured;
+        }
+    }
+
+    public void setNumEscaped(Side side, int numEscaped) {
+        side.ensureDetermined();
+        ensureWithinNumPiecesPerSide(numEscaped);
+        if (side.isWhite()) {
+            _numWhiteEscaped = numEscaped;
+        } else {
+            _numBlackEscaped = numEscaped;
         }
     }
 
@@ -228,7 +240,7 @@ public class Board {
      * of SIDE. If the index is empty, always returns false.
      */
     public boolean occupiedBy(Side side, BoardIndex boardIndex) {
-        ensureSideDetermined(side);
+        side.ensureDetermined();
         if (empty(boardIndex)) {
             return false;
         }
@@ -287,6 +299,45 @@ public class Board {
         }
         Side capturedSide = occupiedBy(boardIndex);
         setNumCaptured(capturedSide, numCaptured(capturedSide) + 1);
+    }
+
+    /**
+     * Returns true iff the player (designated by SIDE) has no pieces behind the position INDEX on
+     * the board.
+     **/
+    public boolean isLastPieceOnBoard(BoardIndex boardIndex, Side side) {
+        for (BoardIndex occupiedBoardIndex : occupiedBoardIndices(side)) {
+            if (occupiedBoardIndex.getIndex() > boardIndex.getIndex()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Returns true iff all of a player's pieces are in the end zone (final 6 positions), or have
+     * already "escaped" the board. The player that is checked for is given by the WHITE boolean.
+     */
+    public boolean allPiecesInEndZone(Side side) {
+        for (BoardIndex occupiedBoardIndex : occupiedBoardIndices(side)) {
+            if (!isEndZoneIndex(occupiedBoardIndex, side)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Returns true iff the INDEX provided can be moved to by the player specified by WHITE. That
+     * is, the position is empty, contains only one of the opponent's pieces (indicating it can be
+     * captured), or the position is not fully occupied by pieces of the specified player.
+     */
+    boolean positionCanBeMovedToBy(BoardIndex index, Side side) {
+        if (full(index)) {
+            return false;
+        }
+        int numPiecesAtPos = get(index);
+        return side.isWhite() ? numPiecesAtPos >= -1 : numPiecesAtPos <= 1;
     }
 
     /** Return a (semi) readable representation of the piece configuration. */

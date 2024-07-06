@@ -38,6 +38,13 @@ public enum Side {
         return this == UNDETERMINED;
     }
 
+    /** Throws an error if I am UNDETERMINED. */
+    void ensureDetermined() {
+        if (isUndetermined()) {
+            throw new BackgammonError("Side mustn't be UNDETERMINED.");
+        }
+    }
+
     /** Return a readable representation of my side. */
     @Override
     public String toString() {
