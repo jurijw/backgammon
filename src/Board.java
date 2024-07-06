@@ -4,34 +4,28 @@ import java.util.Arrays;
 /**
  * This class contains information about the position of pieces on, or off, the Backgammon board.
  */
-public class Positions {
-//    /** The start index for the black end zone. */
-//    private static final Index END_ZONE_START_INDEX_BLACK = Index.boardIndex(0);
-//    /** The end index for the black end zone. */
-//    private static final Index END_ZONE_END_INDEX_BLACK = Index.boardIndex(5);
-//    /** The start index for the white end zone. */
-//    private static final Index END_ZONE_START_INDEX_WHITE = Index.boardIndex(18);
-//    /** The start index for the black end zone. */
-//    private static final Index END_ZONE_END_INDEX_WHITE = Index.boardIndex(23);
-
+public class Board {
     /**
      * The default board setup structure. The trailing four zeros represent escaped and captured
      * white and black pieces.
      */
     private static final int[] DEFAULT_POSITION_SETUP = {
-            2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, -2, 0, 0, 0, 0
-    };
+            2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, -2 };
 
     /**
      * A Position instance capturing all information related to storing positions on or off the
      * board.
      */
-    public Positions() {
+    public Board() {
         this._positions = DEFAULT_POSITION_SETUP.clone();
+        this._numWhiteCaptured = 0;
+        this._numBlackCaptured = 0;
+        this._numWhiteEscaped = 0;
+        this._numBlackEscaped = 0;
     }
 
     /** Construct a positions instance from an input SETUP array. */
-    public Positions(int[] setup) {
+    public Board(int[] setup) {
         ensureValidSetup(setup);
         this._positions = setup.clone();
         // TODO: Ensure this isn't slow once expectiminimax is implemented.
@@ -41,9 +35,9 @@ public class Positions {
      * array is too long and ensures that the number of pieces at any position don't exceed the
      * allowed maximum. */
     private void ensureValidSetup(int[] setup) {
-        if (setup.length != Structure.SIZE) {
+        if (setup.length != Structure.BOARD_SIZE) {
             throw new BackgammonError("Position instance must be setup with an array of length: "
-                                              + "%d", Structure.SIZE);
+                                              + "%d", Structure.BOARD_SIZE);
         }
         for (int i = 0; i < Structure.BOARD_SIZE; i++) {
             if (Math.abs(setup[i]) > Structure.MAX_NUM_PIECES_PER_BOARD_POSITION) {
@@ -51,15 +45,6 @@ public class Positions {
                                                                 + "exceeds the maximum permissible "
                                                                 + "number of pieces per board position: %d.", i,
                                                         Structure.MAX_NUM_PIECES_PER_BOARD_POSITION));
-            }
-        }
-        for (int i = Structure.BOARD_SIZE; i < Structure.SIZE; i++) {
-            if (Math.abs(setup[i]) > Structure.NUM_PIECES_PER_SIDE) {
-                throw new BackgammonError(String.format("The number of pieces at index: %d "
-                                                                + "exceeds the maximum "
-                                                                + "permissible number of pieces "
-                                                                + "per side: %d.", i,
-                                                        Structure.NUM_PIECES_PER_SIDE));
             }
         }
     }
@@ -71,61 +56,58 @@ public class Positions {
 
     /** Set the number of pieces at a given INDEX. Negative values indicate black pieces. */
     public void set(BoardIndex boardIndex, int val) {
-        ensureValidSet(boardIndex, val);
+        ensureValidBoardValue(val);
         _positions[boardIndex.getIndex()] = val;
     }
 
-    /** Ensures that the passed VAL is a valid value for the given INDEX. Throws an error
-     * otherwise. */
-    private void ensureValidSet(BoardIndex boardIndex, int val) {
-        if (boardIndex.isBoardIndex() && Math.abs(val) > Structure.MAX_NUM_PIECES_PER_BOARD_POSITION) {
+    /** Ensures that the passed value VAL is valid for the number of pieces on the board. Throws an
+     * error otherwise. */
+    private void ensureValidBoardValue(int val) {
+        if (Math.abs(val) > Structure.MAX_NUM_PIECES_PER_BOARD_POSITION) {
             throw new BackgammonError("Number of pieces: %d exceeds the number of allowable "
-                                              + "pieces for board position: %d. The maximum is: %d",
-                                      val,
-                                      boardIndex.getIndex(), Structure.MAX_NUM_PIECES_PER_BOARD_POSITION);
-        }
-        if (Math.abs(val) > Structure.NUM_PIECES_PER_SIDE) {
-            throw new BackgammonError("Number of pieces: %d exceeds the number of allowable "
-                                              + "pieces for off-board position: %d. The maximum "
+                                              + "pieces for board positions. The maximum "
                                               + "is: %d", val,
-                                      boardIndex.getIndex(), Structure.NUM_PIECES_PER_SIDE);
+                                      Structure.MAX_NUM_PIECES_PER_BOARD_POSITION);
         }
     }
 
-    /** Returns true iff there are no pieces at position INDEX. */
+    /** Returns true iff there are no pieces at BOARDINDEX. */
     public boolean empty(BoardIndex boardIndex) {
         return get(boardIndex) == 0;
     }
 
-    /** Returns true iff the position at INDEX is occupied. */
+    /** Returns true iff the position at BOARDINDEX is occupied. */
     public boolean occupied(BoardIndex boardIndex) {
         return !empty(boardIndex);
     }
 
-    /** Returns true iff the position at INDEX is fully occupied. */
+    /** Returns true iff the position at BOARDINDEX is fully occupied. */
     public boolean full(BoardIndex boardIndex) {
-        if (boardIndex.isBoardIndex()) {
-            return Math.abs(get(boardIndex)) == Structure.MAX_NUM_PIECES_PER_BOARD_POSITION;
-        } else {
-            return Math.abs(get(boardIndex)) == Structure.NUM_PIECES_PER_SIDE;
-        }
+        return Math.abs(get(boardIndex)) == Structure.MAX_NUM_PIECES_PER_BOARD_POSITION;
     }
 
-    /**
-     * Returns true iff there is exactly one piece at INDEX, regardless of color.
-     */
+    /** Returns true iff there is exactly one piece at BOARDINDEX, regardless of color. */
     public boolean single(BoardIndex boardIndex) {
         return Math.abs(get(boardIndex)) == 1;
     }
 
+    /** Throws an error if SIDE is UNDETERMINED. */
+    private void ensureSideDetermined(Side side) {
+        if (side.isUndetermined()) {
+            throw new BackgammonError("This method should not be called on side UNDETERMINED.");
+        }
+    }
+
     /** Returns the number of escaped pieces of the player specified by SIDE. */
     public int numEscaped(Side side) {
-        return get(BoardIndex.escapeIndex(side));
+        ensureSideDetermined(side);
+        return side.isWhite() ? _numWhiteEscaped : _numBlackEscaped;
     }
 
     /** Returns the number of captured pieces of the player specified by SIDE. */
     public int numCaptured(Side side) {
-        return get(BoardIndex.captureIndex(side));
+        ensureSideDetermined(side);
+        return side.isWhite() ? _numWhiteCaptured : _numBlackCaptured;
     }
 
     /** Returns true iff at least one of the pieces of the player specified by SIDE has been
@@ -145,17 +127,13 @@ public class Positions {
     private ArrayList<BoardIndex> getOccupiedBoardIndicesInRange(Side side,
                                                                  BoardIndex startBoardIndex,
                                                                  BoardIndex endBoardIndex) {
-        if (!startBoardIndex.isBoardIndex() || !endBoardIndex.isBoardIndex()) {
-            throw new BackgammonError("At least one of the passed indices is not a board index.");
-        }
         if (startBoardIndex.getIndex() > endBoardIndex.getIndex()) {
             throw new BackgammonError("Start index: %d is greater than the end index: %d.",
                                       startBoardIndex.getIndex(), endBoardIndex.getIndex());
         }
         ArrayList<BoardIndex> occupiedBoardIndicesArray = new ArrayList<>();
         for (BoardIndex boardIndex = startBoardIndex; boardIndex.getIndex() <= endBoardIndex.getIndex(); boardIndex
-                =
-                BoardIndex.boardIndex(boardIndex.getIndex() + 1)) {
+                = BoardIndex.boardIndex(boardIndex.getIndex() + 1)) {
             int valAtIndex = get(boardIndex);
             if (occupiedBy(side, boardIndex)) {
                 occupiedBoardIndicesArray.add(boardIndex);
@@ -165,7 +143,7 @@ public class Positions {
     }
 
     /**
-     * Return an integer array containing the indices of all the positions ON THE BOARD occupied by
+     * Return an integer array containing all board indices occupied by
      * the player specified by SIDE.
      */
     public ArrayList<BoardIndex> occupiedBoardIndices(Side side) {
@@ -174,46 +152,59 @@ public class Positions {
     }
 
     /**
-     * Return true if an INDEX (which must refer to a board index) is in the end zone of the player
-     * specified by SIDE.
+     * Return true if a BOARDINDEX is in the end zone of the player specified by SIDE.
      */
     public boolean isEndZoneIndex(BoardIndex boardIndex, Side side) {
-        if (!boardIndex.isBoardIndex()) {
-            throw new BackgammonError("This method should only be called on board indices.");
-        }
+        ensureSideDetermined(side);
         if (side.isWhite()) {
             return (Structure.END_ZONE_START_INDEX_WHITE <= boardIndex.getIndex()) && (boardIndex.getIndex() <= Structure.END_ZONE_END_INDEX_WHITE);
-        } else {
-            return (Structure.END_ZONE_START_INDEX_BLACK <= boardIndex.getIndex()) && (boardIndex.getIndex() <= Structure.END_ZONE_END_INDEX_BLACK);
         }
+        return (Structure.END_ZONE_START_INDEX_BLACK <= boardIndex.getIndex()) && (boardIndex.getIndex() <= Structure.END_ZONE_END_INDEX_BLACK);
     }
 
     /**
-     * Increments the number of pieces at a given INDEX, which must be a board index, maintaining
-     * the color of the pieces at that index. For example, if _positions[4] = -3 (three black pieces at position 4), then
+     * Increments the number of pieces at a given BOARDINDEX maintaining the color of the pieces at that index.
+     * For example, if _positions[4] = -3 (three black pieces at position 4), then
      * increment(4) results in _positions[4] -> -4.
      */
     public void increment(BoardIndex boardIndex, Side side) {
-        boardIndex.ensureValidBoardIndex();
+        ensureSideDetermined(side);
         int delta = side.isWhite() ? 1 : -1;
         set(boardIndex, get(boardIndex) + delta);
     }
 
     /**
-     * Decrements the number of pieces at a given INDEX, maintaining the color of the pieces at that
-     * index. For example, if _positions[4] = -3 (three black pieces at position 4), then
+     * Decrements the number of pieces at a given BOARDINDEX, maintaining the color of the pieces
+     * at that index. For example, if _positions[4] = -3 (three black pieces at position 4), then
      * decrement(4) results in _positions[4] -> -2. Can only be called on non-empty positions.
      */
     public void decrement(BoardIndex boardIndex) {
-        boardIndex.ensureValidBoardIndex();
         ensureOccupied(boardIndex, "This method cannot be applied to an empty position.");
         int delta = (get(boardIndex) >> (Integer.SIZE - 1) | 1);
         int newNumPieces = get(boardIndex) - delta;
         set(boardIndex, newNumPieces);
     }
 
+    private void ensureWithinNumPiecesPerSide(int numPieces) {
+        if (numPieces > Structure.NUM_PIECES_PER_SIDE) {
+            throw new BackgammonError("Number of pieces: %d exceeds the number of pieces per "
+                                              + "side: %d", numPieces,
+                                      Structure.NUM_PIECES_PER_SIDE);
+        }
+    }
+
+    public void setNumCaptured(Side side, int numCaptured) {
+        ensureSideDetermined(side); // TODO: Eventually move this to the SIDE enum.
+        ensureWithinNumPiecesPerSide(numCaptured);
+        if (side.isWhite()) {
+            _numWhiteCaptured = numCaptured;
+        } else {
+            _numBlackCaptured = numCaptured;
+        }
+    }
+
     /**
-     * Throw an error if the position at INDEX is occupied. Additional error information can be
+     * Throw an error if the position at BOARDINDEX is occupied. Additional error information can be
      * specified by MESSAGE.
      */
     private void ensureEmpty(BoardIndex boardIndex, String message) {
@@ -223,7 +214,7 @@ public class Positions {
     }
 
     /**
-     * Throw an error if the position at INDEX is empty. Additional error information can be
+     * Throw an error if the position at BOARDINDEX is empty. Additional error information can be
      * specified by MESSAGE.
      */
     private void ensureOccupied(BoardIndex boardIndex, String message) {
@@ -233,18 +224,18 @@ public class Positions {
     }
 
     /**
-     * Returns true iff the position at INDEX (which must be a board index) is occupied by pieces
+     * Returns true iff the position at BOARDINDEX is occupied by pieces
      * of SIDE. If the index is empty, always returns false.
      */
     public boolean occupiedBy(Side side, BoardIndex boardIndex) {
-        boardIndex.ensureValidBoardIndex();
+        ensureSideDetermined(side);
         if (empty(boardIndex)) {
             return false;
         }
         return ((get(boardIndex) > 0) && side.isWhite()) || ((get(boardIndex) < 0) && side.isBlack());
     }
 
-    /** Returns the side which occupies the given INDEX, which must be a board index. Returns
+    /** Returns the side which occupies the given BOARDINDEX. Returns
      * UNDETERMINED if the position is empty. */
     public Side occupiedBy(BoardIndex boardIndex) {
         if (occupiedBy(Side.WHITE, boardIndex)) {
@@ -259,13 +250,13 @@ public class Positions {
     /**
      * Returns true iff all the pieces of the player designated by SIDE have managed to escape the
      * board.
-     */
+    */
     public boolean allEscaped(Side side) {
         return numEscaped(side) == Structure.NUM_PIECES_PER_SIDE;
     }
 
     /** Return the total number of pieces (including captured and escaped pieces) for the side
-     * specified by white. This number should be invariant over the course of a game. */
+     * specified by SIDE. This number should be invariant over the course of a game. */
     int numPieces(Side side) {
         int total = 0;
         for (BoardIndex boardIndex = BoardIndex.boardIndex(0); boardIndex.getIndex() < Structure.BOARD_SIZE; boardIndex
@@ -281,30 +272,24 @@ public class Positions {
     }
 
     /**
-     * Returns true iff the pieces at INDEX1 and INDEX2, which must be board indices, are of
-     * opposite color.
+     * Returns true iff the pieces at BOARDINDEX1 and BOARDINDEX2 are of opposite color.
      */
-    private boolean oppositeColorsAtIndices(BoardIndex boardIndex1, BoardIndex boardIndex2) {
-        BoardIndex.ensureValidBaordIndices(boardIndex1, boardIndex2);
+    boolean oppositeColorsAtIndices(BoardIndex boardIndex1, BoardIndex boardIndex2) {
         return (get(boardIndex1) ^ get(boardIndex2)) < 0;
     }
 
-    /** Move the piece at INDEX, which must be single, to the appropriate capture index of that
-     * pieces color. */
+    /** Remove the piece at BOARDINDEX, which must be single, and increment the number of
+     * captured pieces for the appropriate side. */
     public void moveToCaptured(BoardIndex boardIndex) {
-        boardIndex.ensureValidBoardIndex();
         if (!single(boardIndex)) {
             throw new BackgammonError("There must be exactly one piece at the index to move it "
                                               + "to its corresponding capture index.");
         }
-        BoardIndex.captureIndex(oc)
-        boolean isWhiteAtIndex = occupiedBy(true, targetIndex);
-        _positions[getCaptureIndex(isWhiteAtIndex)] += 1;
-        set(targetIndex, -get(targetIndex));
-        decrement(startIndex);
+        Side capturedSide = occupiedBy(boardIndex);
+        setNumCaptured(capturedSide, numCaptured(capturedSide) + 1);
     }
 
-    /** Return a (semi) readible representation of the piece configuration. */
+    /** Return a (semi) readable representation of the piece configuration. */
     @Override
     public String toString() {
         return Arrays.toString(_positions);
@@ -318,4 +303,13 @@ public class Positions {
      * (should also always be positive) of captured white and black pieces, respectively.
      */
     private final int[] _positions;
+
+    /** The number of white pieces that have escaped. */
+    private int _numWhiteEscaped;
+    /** The number of black pieces that have escaped. */
+    private int _numBlackEscaped;
+    /** The number of white pieces that have been captured. */
+    private int _numWhiteCaptured;
+    /** The number of black pieces that have been captured. */
+    private int _numBlackCaptured;
 }
