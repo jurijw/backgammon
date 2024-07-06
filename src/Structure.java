@@ -1,4 +1,8 @@
 public class Structure {
+
+    /** The number of piece colors. */
+    static final int NUM_COLORS = 2;
+
     /** The size of the board itself. This should always be a multiple of four. */
     static final int BOARD_SIZE = 24;
     static final int NUM_PIECES_PER_SIDE = 15;
