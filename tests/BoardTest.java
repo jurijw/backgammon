@@ -73,9 +73,9 @@ class BoardTest {
         for (int i = 0; i < Structure.BOARD_SIZE; i++) {
             BoardIndex index = bi(i);
             if (occupiedIndexList.contains(i)) {
-                assertTrue(boardDefault.empty(index), "Failed at index: " + i);
+                assertTrue(boardDefault.occupied(index), "Failed at index: " + i);
             } else {
-                assertFalse(boardDefault.empty(index), "Failed at index: " + i);
+                assertFalse(boardDefault.occupied(index), "Failed at index: " + i);
             }
         }
     }
@@ -117,17 +117,17 @@ class BoardTest {
 
     @Test
     void hasCapturedPiece() {
-        Board whiteCaptured = new Board(TestSetups.TRICKY_ENTRY_WHITE);
-        assertTrue(whiteCaptured.hasCapturedPiece(Side.WHITE));
-        Board fullEndZones = new Board(TestSetups.FULL_END_ZONES);
-        assertTrue(fullEndZones.hasCapturedPiece(Side.WHITE));
-        assertTrue(fullEndZones.hasCapturedPiece(Side.BLACK));
+        Board whiteCapturedBoard = Board.fromExtendedSetup(TestSetups.TRICKY_ENTRY_WHITE);
+        assertTrue(whiteCapturedBoard.hasCapturedPiece(Side.WHITE));
+        Board whiteWinBoard = Board.fromExtendedSetup(TestSetups.WHITE_WIN);
+        assertFalse(whiteWinBoard.hasCapturedPiece(Side.WHITE));
+        assertTrue(whiteWinBoard.hasCapturedPiece(Side.BLACK));
     }
 
     @Test
     void occupiedBoardIndices() {
         List<Integer> occupiedByWhiteList =
-                boardDefault.occupiedBoardIndices(Side.WHITE).stream().map(x -> x.getIndex()).toList();
+                boardDefault.occupiedBoardIndices(Side.WHITE).stream().map(BoardIndex::getIndex).toList();
         assertEquals(DEFAULT_WHITE_BOARD_POSITIONS, occupiedByWhiteList);
     }
 
@@ -163,12 +163,12 @@ class BoardTest {
     void occupiedBy() {
         for (int i = 0; i < Structure.BOARD_SIZE; i++) {
             if (DEFAULT_WHITE_BOARD_POSITIONS.contains(i)) {
-                assertTrue(boardDefault.occupiedBy(Side.WHITE, bi(i)));
+                assertTrue(boardDefault.occupiedBy(Side.WHITE, bi(i)), "Failed at index: " + i);
             } else if (DEFAULT_BLACK_BOARD_POSITIONS.contains(i)) {
-                assertTrue(boardDefault.occupiedBy(Side.BLACK, bi(i)));
+                assertTrue(boardDefault.occupiedBy(Side.BLACK, bi(i)), "Failed at index: " + i);
             } else {
-                assertFalse(boardDefault.occupiedBy(Side.WHITE, bi(i)));
-                assertFalse(boardDefault.occupiedBy(Side.BLACK, bi(i)));
+                assertFalse(boardDefault.occupiedBy(Side.WHITE, bi(i)), "Failed at index: " + i);
+                assertFalse(boardDefault.occupiedBy(Side.BLACK, bi(i)), "Failed at index: " + i);
             }
         }
     }
@@ -181,7 +181,7 @@ class BoardTest {
     void allEscaped() {
         assertFalse(boardDefault.allEscaped(Side.WHITE));
         assertFalse(boardDefault.allEscaped(Side.BLACK));
-        Board allPiecesEscaped = new Board(TestSetups.BOTH_WIN);
+        Board allPiecesEscaped = Board.fromExtendedSetup(TestSetups.BOTH_WIN);
         assertTrue(allPiecesEscaped.allEscaped(Side.WHITE));
         assertTrue(allPiecesEscaped.allEscaped(Side.BLACK));
     }
@@ -193,8 +193,8 @@ class BoardTest {
         /* Cannot capture an empty position. */
         assertThrows(BackgammonError.class, () -> boardDefault.moveToCaptured(bi(1)));
         /* Cannot decrement an empty position. */
-        boardDefault.decrement(bi(1));
+        assertThrows(BackgammonError.class, () -> boardDefault.decrement(bi(1)));
         /* Cannot increment a full position. */
-        boardDefault.increment(bi(5), Side.BLACK);
+        assertThrows(BackgammonError.class, () -> boardDefault.increment(bi(5), Side.BLACK));
     }
 }

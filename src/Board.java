@@ -11,7 +11,7 @@ public class Board {
      * white and black pieces.
      */
     private static final int[] DEFAULT_POSITION_SETUP = {
-            2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 5, 0, 3, 0, 0, 0, 0, -2 };
+            2, 0, 0, 0, 0, -5, 0, -3, 0, 0, 0, 5, -5, 0, 0, 0, 3, 0, 5, 0, 0, 0, 0, -2 };
 
     /**
      * A Position instance capturing all information related to storing positions on or off the
@@ -49,12 +49,11 @@ public class Board {
             throw new BackgammonError("Extended setup array is length: %d. Must be length: %d",
                                       extendedSetup.length, Structure.BOARD_SIZE + 4);
         }
-        int[] setup = new int[Structure.BOARD_SIZE];
-        setup = extendedSetup;
-        int numEscapedWhite = extendedSetup[Structure.BOARD_SIZE - 4];
-        int numEscapedBlack = extendedSetup[Structure.BOARD_SIZE - 3];
-        int numCapturedWhite = extendedSetup[Structure.BOARD_SIZE - 2];
-        int numCapturedBlack = extendedSetup[Structure.BOARD_SIZE - 1];
+        int[] setup = Arrays.copyOf(extendedSetup, Structure.BOARD_SIZE);
+        int numEscapedWhite = extendedSetup[Structure.BOARD_SIZE];
+        int numEscapedBlack = extendedSetup[Structure.BOARD_SIZE + 1];
+        int numCapturedWhite = extendedSetup[Structure.BOARD_SIZE + 2];
+        int numCapturedBlack = extendedSetup[Structure.BOARD_SIZE + 3];
         return new Board(setup, numEscapedWhite, numEscapedBlack, numCapturedWhite,
                         numCapturedBlack);
     }
