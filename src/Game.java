@@ -10,8 +10,7 @@ import java.util.Set;
 public class Game {
 
     Game() {
-        _state = new State();
-        _state.setTurn(doesWhiteStart());
+        _state = new State(Side.WHITE, 1, 1);
         _movePickerWhite = new AI.RandomChoice();
         _movePickerBlack = new AI.RandomChoice();
     }
@@ -21,7 +20,7 @@ public class Game {
         while (!gameOver()) {
             turn();
         }
-        System.out.println("Game over. Winner is " + _state.whiteWon());
+        System.out.println("Game over. Winner is " + _state.winner());
     }
 
     public void turn() {
@@ -34,12 +33,11 @@ public class Game {
             System.out.println("Playing move: " + move);
             makeMove(move);
         }
-        _state.switchTurn();
     }
 
     /** Returns a move selected from the move picker associated with the active player. */
     private Move selectMove(Set<Move> moves) {
-        if (_state.white()) {
+        if (_state.getCurrentSide().isWhite()) {
             return _movePickerWhite.selectMove(moves);
         } else {
             return _movePickerBlack.selectMove(moves);
@@ -86,8 +84,7 @@ public class Game {
     }
 
     public void print() {
-        String side = _state.white() ? "WHITE" : "BLACK";
-        System.out.println("TURN: " + side);
+        System.out.println("TURN: " + _state.getCurrentSide());
 
         // TODO: This should all be handles in the State class.
         // System.out.println(_state.getDice());

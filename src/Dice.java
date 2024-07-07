@@ -49,6 +49,19 @@ public class Dice {
         return _first == _second;
     }
 
+    /** Return true iff ROLL is in the valid range of a die roll. */
+    public static boolean validDieRoll(int roll) {
+        return (1 <= roll) && (roll <= NUM_SIDES);
+    }
+
+    /** Throws an error if the given ROLL is not in the valid range of a die roll. */
+    public static void ensureValidDieRoll(int roll) {
+        if (!validDieRoll(roll)) {
+            throw new BackgammonError("Invalid die roll: %d is outside the expected range of 1 to"
+                                              + "%d.", roll, NUM_SIDES);
+        }
+    }
+
     /** Return a readable representation of the dice rolled. */
     public String toString() {
         return "Roll: (" + _first + ", " + _second + ")";

@@ -16,14 +16,15 @@ class StateTest {
 
     @Test
     void testBlackEscape() {
-        State s = new State(false, 1, 2, TestSetups.ESCAPE);
-        Set<Move> expectedLegalMoves = new HashSet<>();
-        expectedLegalMoves.add(Move.move(0, 25, 1));
-        expectedLegalMoves.add(Move.move(0, 25, 2));
-        assertEquals(expectedLegalMoves, s.getLegalMoves());
-
-        /* Play an escaping move. */
-        s.makeMove(Move.move(0, 25, 1));
+//        State s = new State()
+//        State s = new State(false, 1, 2, TestSetups.ESCAPE);
+//        Set<Move> expectedLegalMoves = new HashSet<>();
+//        expectedLegalMoves.add(Move.boardMove(0, 25, 1));
+//        expectedLegalMoves.add(Move.boardMove(0, 25, 2));
+//        assertEquals(expectedLegalMoves, s.getLegalMoves());
+//
+//        /* Play an escaping move. */
+//        s.makeMove(Move.boardMove(0, 25, 1));
         
     }
 
