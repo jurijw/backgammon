@@ -5,9 +5,9 @@ public class ReentryMove extends Move {
 
     static BoardIndex determineTargetIndex(int roll, Side side) {
         if (side.isWhite()) {
-            return BoardIndex.boardIndex(roll - 1);
+            return BoardIndex.make(roll - 1);
         } else {
-            return BoardIndex.boardIndex(Structure.BOARD_SIZE - roll);
+            return BoardIndex.make(Structure.BOARD_SIZE - roll);
         }
     }
 

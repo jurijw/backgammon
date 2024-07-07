@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * This class contains information about the position of pieces on, or off, the Backgammon board.
@@ -16,19 +17,46 @@ public class Board {
      * A Position instance capturing all information related to storing positions on or off the
      * board.
      */
+    public Board(int[] setup, int numWhiteEscaped, int numBlackEscaped, int numWhiteCaptured,
+                 int numBlackCaptured) {
+        ensureValidSetup(setup);
+        // TODO: Validate number of pieces is correct everywhere.
+        this._positions = setup;
+        this._numWhiteCaptured = numWhiteCaptured;
+        this._numBlackCaptured = numBlackCaptured;
+        this._numWhiteEscaped = numWhiteEscaped;
+        this._numBlackEscaped = numBlackEscaped;
+    }
+
+    /** Construct a Board instance from the default configuration (standard game of Backgammon). */
     public Board() {
-        this._positions = DEFAULT_POSITION_SETUP.clone();
-        this._numWhiteCaptured = 0;
-        this._numBlackCaptured = 0;
-        this._numWhiteEscaped = 0;
-        this._numBlackEscaped = 0;
+        this(DEFAULT_POSITION_SETUP.clone(), 0, 0, 0, 0);
     }
 
     /** Construct a positions instance from an input SETUP array. */
     public Board(int[] setup) {
-        ensureValidSetup(setup);
-        this._positions = setup.clone();
+        this(setup.clone(), 0, 0, 0, 0);
         // TODO: Ensure this isn't slow once expectiminimax is implemented.
+    }
+
+    /** Construct a board from an extended setup array, where the last four entries represent the
+     * number of white escaped pieces, the number of black escaped pieces, the number of white
+     * captured pieces, and the number of black captured pieces, respectively. The number of
+     * pieces for either side must sum to Structure.NUM_PIECES_PER_SIDE.
+     */
+    public static Board fromExtendedSetup(int[] extendedSetup) {
+        if (!(extendedSetup.length == Structure.BOARD_SIZE + 4)) {
+            throw new BackgammonError("Extended setup array is length: %d. Must be length: %d",
+                                      extendedSetup.length, Structure.BOARD_SIZE + 4);
+        }
+        int[] setup = new int[Structure.BOARD_SIZE];
+        setup = extendedSetup;
+        int numEscapedWhite = extendedSetup[Structure.BOARD_SIZE - 4];
+        int numEscapedBlack = extendedSetup[Structure.BOARD_SIZE - 3];
+        int numCapturedWhite = extendedSetup[Structure.BOARD_SIZE - 2];
+        int numCapturedBlack = extendedSetup[Structure.BOARD_SIZE - 1];
+        return new Board(setup, numEscapedWhite, numEscapedBlack, numCapturedWhite,
+                        numCapturedBlack);
     }
 
     /** Throws an error if the SETUP array does not follow a valid structure. Checks if the given
@@ -117,16 +145,16 @@ public class Board {
     // TODO: This will presumably be slow. A better approach may be to store the occupied
     //  positions of either side in an instance variable and update it every time we modify the
     //  _positions array.
-    private ArrayList<BoardIndex> getOccupiedBoardIndicesInRange(Side side,
-                                                                 BoardIndex startBoardIndex,
-                                                                 BoardIndex endBoardIndex) {
+    private List<BoardIndex> getOccupiedBoardIndicesInRange(Side side,
+                                                            BoardIndex startBoardIndex,
+                                                            BoardIndex endBoardIndex) {
         if (startBoardIndex.getIndex() > endBoardIndex.getIndex()) {
             throw new BackgammonError("Start index: %d is greater than the end index: %d.",
                                       startBoardIndex.getIndex(), endBoardIndex.getIndex());
         }
         ArrayList<BoardIndex> occupiedBoardIndicesArray = new ArrayList<>();
         for (int i = startBoardIndex.getIndex(); i <= endBoardIndex.getIndex(); i++) {
-            BoardIndex boardIndex = BoardIndex.boardIndex(i);
+            BoardIndex boardIndex = BoardIndex.make(i);
             int valAtIndex = get(boardIndex);
             if (occupiedBy(side, boardIndex)) {
                 occupiedBoardIndicesArray.add(boardIndex);
@@ -139,9 +167,9 @@ public class Board {
      * Return an integer array containing all board indices occupied by
      * the player specified by SIDE.
      */
-    public ArrayList<BoardIndex> occupiedBoardIndices(Side side) {
-        return getOccupiedBoardIndicesInRange(side, BoardIndex.boardIndex(0),
-                                              BoardIndex.boardIndex(Structure.BOARD_SIZE - 1));
+    public List<BoardIndex> occupiedBoardIndices(Side side) {
+        return getOccupiedBoardIndicesInRange(side, BoardIndex.make(0),
+                                              BoardIndex.make(Structure.BOARD_SIZE - 1));
     }
 
     /**
@@ -271,9 +299,9 @@ public class Board {
      * specified by SIDE. This number should be invariant over the course of a game. */
     int numPieces(Side side) {
         int total = 0;
-        for (BoardIndex boardIndex = BoardIndex.boardIndex(0); boardIndex.getIndex() < Structure.BOARD_SIZE; boardIndex
+        for (BoardIndex boardIndex = BoardIndex.make(0); boardIndex.getIndex() < Structure.BOARD_SIZE; boardIndex
                 =
-                BoardIndex.boardIndex(boardIndex.getIndex() + 1)) {
+                BoardIndex.make(boardIndex.getIndex() + 1)) {
             int valAtIndex = get(boardIndex);
             if (occupiedBy(side, boardIndex)) {
                 total += Math.abs(valAtIndex);

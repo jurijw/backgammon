@@ -9,7 +9,7 @@ public class BoardIndex implements Comparable<BoardIndex> {
     }
 
     /** A factory method to return an index instance associated with a position on the board. */
-    public static BoardIndex boardIndex(int boardIndex) {
+    public static BoardIndex make(int boardIndex) {
         ensureValidBoardIndices(boardIndex);
         return INDICES[boardIndex];
     }

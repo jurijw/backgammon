@@ -33,8 +33,8 @@ public class BoardMove extends Move {
                 for (int roll = 1; roll <= Dice.NUM_SIDES; roll++) {
                     if (startIndex != targetIndex) {
                         BOARD_MOVES[startIndex][targetIndex][roll - 1]
-                                = new BoardMove(BoardIndex.boardIndex(startIndex),
-                                           BoardIndex.boardIndex(targetIndex),
+                                = new BoardMove(BoardIndex.make(startIndex),
+                                           BoardIndex.make(targetIndex),
                                            roll);
                     }
                 }

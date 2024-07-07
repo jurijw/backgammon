@@ -62,7 +62,7 @@ public class State {
         /* Print the pieces for the top half of the board (positions 1-12). */
         for (int i = 0; i < 5; i++) {
             for (int j = 0; j < 12; j++) {
-                int numPieces = _board.get(BoardIndex.boardIndex(j));
+                int numPieces = _board.get(BoardIndex.make(j));
                 if (Math.abs(numPieces) > i) {
                     if (numPieces > 0) {
                         Utils.printWhite();
@@ -87,7 +87,7 @@ public class State {
         /* Print the bottom half of the board (positions 13-24). */
         for (int i = 4; i >= 0; i--) {
             for (int j = Structure.BOARD_SIZE - 1; j >= Structure.BOARD_SIZE / 2; j--) {
-                int numPieces = _board.get(BoardIndex.boardIndex(j));
+                int numPieces = _board.get(BoardIndex.make(j));
                 if (Math.abs(numPieces) > i) {
                     if (numPieces > 0) {
                         Utils.printWhite();
@@ -130,6 +130,7 @@ public class State {
             throw new BackgammonError("INVALID MOVE ATTEMPT: The game is over.");
         }
         if (move instanceof PassMove) {
+            _legalMoves.clear();
             switchTurn();
             return;
         }
@@ -301,7 +302,7 @@ public class State {
                     }
                 } else {
                     /* The roll keeps the piece on the board. */
-                    BoardIndex targetIndex = BoardIndex.boardIndex(targetIndexPos);
+                    BoardIndex targetIndex = BoardIndex.make(targetIndexPos);
                     if (positionCanBeMovedToByActivePlayer(targetIndex)) {
                         _legalMoves.add(BoardMove.move(startIndex, targetIndex, roll));
                     }

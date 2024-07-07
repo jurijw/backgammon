@@ -20,9 +20,9 @@ public class EscapeMove extends Move {
 
     private static BoardIndex determineStartIndexFromOffset(int offsetFromEscape, Side side) {
         if (side.isWhite()) {
-            return BoardIndex.boardIndex(Structure.BOARD_SIZE - offsetFromEscape);
+            return BoardIndex.make(Structure.BOARD_SIZE - offsetFromEscape);
         } else {
-            return BoardIndex.boardIndex(offsetFromEscape - 1);
+            return BoardIndex.make(offsetFromEscape - 1);
         }
     }
     /**
