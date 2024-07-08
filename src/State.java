@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * This class handles all things related to the STATE of a game. But also provides methods to
@@ -42,6 +39,27 @@ public class State {
      * are specified. */
     State(int[] setup, int first, int second, Side currentSide, List<Integer> remainingRolls) {
         this(new Board(setup), new Dice(first, second), currentSide, remainingRolls);
+    }
+
+    /** Create a State instance using an EXTENDEDSETUP array, where the last four entries
+     * represent the number of white escaped, black escaped, white captured, and black captured
+     * pieces, respectively. */
+    static State fromExtendedSetup(int[] extendedSetup, int first, int second, Side currentSide,
+                            List<Integer> remainingRolls) {
+        Board board = Board.fromExtendedSetup(extendedSetup);
+        return new State(board, new Dice(first, second), currentSide, remainingRolls);
+    }
+
+    /** Create a State instance from a map. */
+    static State fromMap(Map<String, Object> stateConfigMap) {
+        int[] extendedSetup = (int[]) stateConfigMap.getOrDefault("extendedSetup",
+                                                          new int[Structure.BOARD_SIZE + 4]);
+        int first = (int) stateConfigMap.getOrDefault("first", 0);
+        int second = (int) stateConfigMap.getOrDefault("second", 0);
+        Side currentSide = (Side) stateConfigMap.getOrDefault("currentSide", Side.UNDETERMINED);
+        List<Integer> remainingRolls = Arrays.stream(((int[]) stateConfigMap.getOrDefault(
+                "remainingRolls", List.of(first, second)))).boxed().toList();
+        return fromExtendedSetup(extendedSetup, first, second, currentSide, remainingRolls);
     }
 
     // TODO: Consider abstracting away into a View class.
