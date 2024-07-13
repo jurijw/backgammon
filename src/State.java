@@ -28,37 +28,53 @@ public class State {
         this(new Board(), new Dice(), Side.UNDETERMINED, new ArrayList<>());
     }
 
-    /** Create a default state instance where the initial player is specified by SIDE, and the
+    /**
+     * Create a default state instance where the initial player is specified by SIDE, and the
      * initial rolls are specified by FIRST and SECOND.
      */
     State(Side currentSide, int first, int second) {
         this(new Board(), new Dice(first, second), currentSide, new ArrayList<>());
     }
 
-    /** Create a State instance where the board setup, current side, dice, and remaining rolls
-     * are specified. */
+    /**
+     * Create a State instance where the board setup, current side, dice, and remaining rolls
+     * are specified.
+     */
     State(int[] setup, int first, int second, Side currentSide, List<Integer> remainingRolls) {
         this(new Board(setup), new Dice(first, second), currentSide, remainingRolls);
     }
 
-    /** Create a State instance using an EXTENDEDSETUP array, where the last four entries
+    /**
+     * Create a State instance using an EXTENDEDSETUP array, where the last four entries
      * represent the number of white escaped, black escaped, white captured, and black captured
-     * pieces, respectively. */
-    static State fromExtendedSetup(int[] extendedSetup, int first, int second, Side currentSide,
-                            List<Integer> remainingRolls) {
+     * pieces, respectively.
+     */
+    static State fromExtendedSetup(int[] extendedSetup,
+                                   int first,
+                                   int second,
+                                   Side currentSide,
+                                   List<Integer> remainingRolls) {
         Board board = Board.fromExtendedSetup(extendedSetup);
         return new State(board, new Dice(first, second), currentSide, remainingRolls);
+    }
+
+    static State fromExtendedSetup(int[] extendedSetup, int first, int second, Side currentSide) {
+        Board board = Board.fromExtendedSetup(extendedSetup);
+        return new State(board, new Dice(first, second), currentSide, new ArrayList<>());
     }
 
     /** Create a State instance from a map. */
     static State fromMap(Map<String, Object> stateConfigMap) {
         int[] extendedSetup = (int[]) stateConfigMap.getOrDefault("extendedSetup",
-                                                          new int[Structure.BOARD_SIZE + 4]);
+                                                                  new int[Structure.BOARD_SIZE
+                                                                          + 4]);
         int first = (int) stateConfigMap.getOrDefault("first", 0);
         int second = (int) stateConfigMap.getOrDefault("second", 0);
         Side currentSide = (Side) stateConfigMap.getOrDefault("currentSide", Side.UNDETERMINED);
-        List<Integer> remainingRolls = Arrays.stream(((int[]) stateConfigMap.getOrDefault(
-                "remainingRolls", List.of(first, second)))).boxed().toList();
+        int[] remainingRollsArr = (int[]) stateConfigMap.getOrDefault("remainingRolls",
+                                                                      new int[]{ first, second });
+        List<Integer> remainingRolls
+                = new ArrayList<>(Arrays.stream(remainingRollsArr).boxed().toList());
         return fromExtendedSetup(extendedSetup, first, second, currentSide, remainingRolls);
     }
 
@@ -139,7 +155,10 @@ public class State {
         return false;
     }
 
-    /** Applies the given MOVE. Also updates the legal moves set accordingly and checks for game over. */
+    /**
+     * Applies the given MOVE. Also updates the legal moves set accordingly and checks for game
+     * over.
+     */
     public void makeMove(Move move) {
         if (!_legalMoves.contains(move)) {
             throw new BackgammonError("INVALID MOVE ATTEMPT: Attempting to make a non-legal move.");
@@ -158,6 +177,7 @@ public class State {
         if (move instanceof EscapeMove) {
             _board.setNumEscaped(move.getSide(), _board.numEscaped(move.getSide()) + 1);
             _board.decrement(move.getStartIndex());
+            update();
             return;
         }
         if (isCapture(move)) {
@@ -172,10 +192,16 @@ public class State {
         }
         _board.increment(move.getTargetIndex(), getCurrentSide());
 
+        update();
+    }
+
+    /** Checks if the game is over. If not, switches the active players turn if there are no more
+     * remaining rolls, and otherwise just updates legal moves. */
+    private void update() {
         /* Check if the game has ended. */
         updateGameOver();
         if (!gameOver()) {
-            if (getAvailableRolls().isEmpty()) {
+            if (getRemainingRolls().isEmpty()) {
                 /* If after performing the move, no more rolls are available, switch the turn. */
                 switchTurn();
             } else {
@@ -184,8 +210,6 @@ public class State {
             }
         }
     }
-
-
 
     // TODO: Consider implementing this everywhere instead of _positions.get()
     /**
@@ -255,7 +279,7 @@ public class State {
     }
 
     /** Getter for my available rolls. */
-    List<Integer> getAvailableRolls() {
+    List<Integer> getRemainingRolls() {
         return _remainingRolls;
     }
 
@@ -293,9 +317,6 @@ public class State {
         return getCurrentSide().isWhite() ? targetIndex == Structure.BOARD_SIZE : targetIndex == -1;
     }
 
-    // FIXME: Added a move 27 -> 18
-    // FIXME: Appears to not take into account available rolls. So if a roll was 5, 3, and the 3
-    //  is used then the legalRolls still contains rolls using the 3.
     /** Takes a single roll (1-6) and determines legal moves based on that roll. */
     private void updateLegalMovesFromRoll(int roll) {
         if (activePlayerHasBeenCaptured()) {
@@ -347,6 +368,12 @@ public class State {
      * caller! */
     public Set<Move> getLegalMoves() {
         return _legalMoves;
+    }
+
+    /** Return the Board associated with my state. The Board should NOT be modified directly by
+     * the caller. */
+    public Board getBoard() {
+        return _board;
     }
 
     /** Returns true iff the active player has won the game. */
