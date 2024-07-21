@@ -33,7 +33,8 @@ public class State {
      * initial rolls are specified by FIRST and SECOND.
      */
     State(Side currentSide, int first, int second) {
-        this(new Board(), new Dice(first, second), currentSide, new ArrayList<>());
+        this(new Board(), new Dice(first, second), currentSide,
+             new ArrayList<>(List.of(first, second)));
     }
 
     /**
@@ -235,6 +236,11 @@ public class State {
         return _currentSide;
     }
 
+    /** A setter for the currently active side. */
+    public void setCurrentSide(Side side) {
+        _currentSide = side;
+    }
+
     /** Switch the active player on my board. */
     public void switchTurn() {
         _currentSide.ensureDetermined();
@@ -385,7 +391,7 @@ public class State {
      * accordingly.
      */
     public void updateGameOver() {
-        if (_board.allEscaped(_currentSide)) {
+        if (!_currentSide.isUndetermined() && _board.allEscaped(_currentSide)) {
             _gameOver = true;
             _winner = _currentSide;
         }
@@ -399,11 +405,32 @@ public class State {
 
     public void print() {
         printBoard();
-        _board.toString();
         System.out.print("Captured: W: " + _board.numCaptured(Side.WHITE) + ", B: " + _board.numCaptured(Side.BLACK));
         System.out.println(" Escaped: W: " + _board.numEscaped(Side.WHITE) + ", B: " + _board.numEscaped(Side.BLACK));
         System.out.println("TURN: " + getCurrentSide() + ";  " + _dice + ",  " + _remainingRolls);
         System.out.println(_legalMoves);
+    }
+
+    @Override
+    public String toString() {
+        return toStringConcise();
+    }
+
+
+    /** Return a string representation which fully captures the state of the game, similar to FEN
+     *  notation in chess. */
+    public String toStringConcise() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(_board.toStringConcise().strip());
+        sb.append(" ").append(_currentSide.toString().toLowerCase().charAt(0)).append(" ");
+        for (int i = 0; i < 4; i++) {
+            try {
+                sb.append(getRemainingRolls().get(i));
+            } catch (IndexOutOfBoundsException e) {
+                sb.append(0);
+            }
+        }
+        return sb.toString();
     }
 
     /** The currently active side. */
