@@ -168,7 +168,7 @@ public class State {
             throw new BackgammonError("INVALID MOVE ATTEMPT: The game is over.");
         }
         if (move instanceof PassMove) {
-            _legalMoves.clear();
+            _legalMoves.clear(); // TODO: Why am I clearing these?
             switchTurn();
             return;
         }
@@ -182,8 +182,13 @@ public class State {
             return;
         }
         if (isCapture(move)) {
-            /* The move is a capture. */
+            /* Remove the captured piece and increment the captured count for the appropriate
+            color. TODO: This only removes the piece at the target and ensured the number of
+                    captured pieces for that piece color are incremented. We must still ensure
+                    that the capturing piece is moved (i.e decrement inital position and
+                    increment target)! */
             _board.moveToCaptured(move.getTargetIndex());
+            _board.decrement(move.getTargetIndex());
         }
         if (move instanceof ReentryMove) {
             _board.setNumCaptured(getCurrentSide(), _board.numCaptured(getCurrentSide()) - 1);
