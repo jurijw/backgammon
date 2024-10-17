@@ -18,7 +18,8 @@ class StateTest {
         "remainingRolls", new int[] { 1, 2 }
     );
 
-    /** A convenient shorthand for creating BoardIndex objects. */
+    /** A convenient shorthand for creating BoardIndex objects. */ // TODO: Move to Utils, import
+    // from there.
     static BoardIndex bi(int i) {
         return BoardIndex.make(i);
     }
@@ -28,13 +29,36 @@ class StateTest {
     }
 
     @Test
+    void testCapture() {
+        int[] captureSetup = {
+                0, 0, 1, 0, 0, -4, 0, 0, 0, 5, 5, 4, 0, 0, -5, -5, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0
+        };
+        Map<String, Object> captureConfig = Map.of(
+                "extendedSetup", captureSetup,
+                "first", 3,
+                "second", 1,
+                "currentSide", Side.BLACK,
+                "remainingRolls", new int[] { 3 }
+        );
+        State s = State.fromMap(captureConfig);
+        System.out.println(s.getLegalMoves());
+        /* Capture the white piece at index 2 with a black piece from index 6. */
+        s.makeMove(BoardMove.move(bi(5), bi(2), 3));
+        System.out.println(s);
+        /* Ensure that the capturing (black piece) now occupies the captured index. */
+        assertEquals(-1, s.get(bi(2)));
+    }
+
+    @Test
     void fromMap() {
         State s = State.fromMap(blackEscapeConfig);
         assertEquals(blackEscapeConfig.get("currentSide"), s.getCurrentSide());
         assertEquals(blackEscapeConfig.get("first"), s.first());
         assertEquals(blackEscapeConfig.get("second"), s.second());
         for (int i = 0; i < s.getRemainingRolls().size(); i++) {
-            assertEquals(blackEscapeConfig.get("remainingRolls"), s.getRemainingRolls().get(i),
+            assertEquals(((int[]) blackEscapeConfig.get("remainingRolls"))[i],
+                         s.getRemainingRolls().get(i),
                          "Failed at index: " + i);
         }
         // Check the board is properly setup.
@@ -63,7 +87,28 @@ class StateTest {
     }
 
     @Test
-    void makeMove() {
+    void testStringRepresentation() {
+        State s = new State();
+        String expected = "2  0  0  0  0 -5  0 -3  0  0  0  5 -5  0  0  0  3  0  5  0  0  0  0 "
+                + "-2\n00 00 u 0000";
+        assertEquals(expected, s.toStringConcise());
+        s.setCurrentSide(Side.WHITE);
+        expected = "2  0  0  0  0 -5  0 -3  0  0  0  5 -5  0  0  0  3  0  5  0  0  0  0 "
+                + "-2\n00 00 w 0000";
+        s = new State(Side.WHITE, 1, 2);
+        expected = "2  0  0  0  0 -5  0 -3  0  0  0  5 -5  0  0  0  3  0  5  0  0  0  0 "
+                + "-2\n00 00 w 1200";
+        assertEquals(expected, s.toStringConcise());
+        /* Play a move. */
+        s.makeMove(BoardMove.move(bi(0), bi(1), 1));
+        expected = "1  1  0  0  0 -5  0 -3  0  0  0  5 -5  0  0  0  3  0  5  0  0  0  0 "
+                + "-2\n00 00 w 2000";
+        assertEquals(expected, s.toStringConcise());
+        /* Make another move. */
+        s.makeMove(BoardMove.move(bi(1), bi(3), 2));
+        expected = "1  0  0  1  0 -5  0 -3  0  0  0  5 -5  0  0  0  3  0  5  0  0  0  0 "
+                + "-2\n00 00 b 0000";
+        assertEquals(expected, s.toStringConcise());
     }
 
     @Test
