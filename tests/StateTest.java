@@ -51,6 +51,36 @@ class StateTest {
     }
 
     @Test
+    void reentryMove() {
+        /* White has two captured pieces and rolls [3, 1], meaning that one of their reentry
+        moves will simultaneously knock out black's piece at index 2.
+         */
+        int[] reentrySetup = {
+                0, 0, -1, 0, 0, -4, 0, 0, 0, 5, 5, 2, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                2, 0
+        };
+        Map<String, Object> captureConfig = Map.of(
+                "extendedSetup", reentrySetup,
+                "first", 3,
+                "second", 1,
+                "currentSide", Side.WHITE,
+                "remainingRolls", new int[] { 1, 3 }
+        );
+        State s = State.fromMap(captureConfig);
+        /* Ensure white has two captured pieces. */
+        assertEquals(2, s.getBoard().numCaptured(s.getCurrentSide()));
+        /* Perform the first reentry move (without capturing the black piece at index 2). */
+        s.makeMove(ReentryMove.move(1, s.getCurrentSide()));
+        assertEquals(1, s.get(bi(0)));
+        assertEquals(1, s.getBoard().numCaptured(s.getCurrentSide()));
+        /* Perform the reentry move that simultaneously captures black's piece at index 2. */
+        assertEquals(-1, s.get(bi(2)));
+        s.makeMove(ReentryMove.move(3, s.getCurrentSide()));
+        assertEquals(1, s.get(bi(2)));
+        assertEquals(1, s.getBoard().numCaptured(Side.BLACK));
+    }
+
+    @Test
     void fromMap() {
         State s = State.fromMap(blackEscapeConfig);
         assertEquals(blackEscapeConfig.get("currentSide"), s.getCurrentSide());
